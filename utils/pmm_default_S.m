@@ -1,0 +1,9 @@
+function opts=pmm_default_S()
+opts.plot           = 0;
+opts.verbose        = 0;
+opts.parametertype  = 'S';
+opts.method         ='sdp';
+opts.poletype       ='lincmplx';
+opts.tol            = 0;
+opts.enforceDC      = 0;
+opts.wgt_scheme     = 3;
