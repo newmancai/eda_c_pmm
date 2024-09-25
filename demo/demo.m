@@ -1,0 +1,34 @@
+close all
+addpath('..');
+pmm_setup
+
+opts=pmm_default_S;
+
+%% A simple example to get start
+% [G,W,F,H]=pmm('symind.s2p', 5, opts);
+% plot_xf(G,F,H)
+
+%% A medium-size problem
+filename = 'HHM1506.s3p';
+% Vector fitting only
+% opts.method='vf_only';
+% [G,W,F,H]=pmm(filename, 20, opts);
+% figure; plot_xf(G,F,H);legend('Data','Model','Error');
+% figure; plot_haeig(G);
+% 
+% %SDP method 
+% opts.method='sdp';
+% [G,W,F,H]=pmm(filename, 20, opts);
+% figure; plot_xf(G,F,H);
+% 
+% % Local compensation
+% opts.method='lc_only';
+% [G1,W1,F,H]=pmm(filename, 20, opts);
+% figure; plot_xf(G1,F,H);
+% %figure; plot_haeig(G);
+
+% Local compensation + DAO method
+opts.method='vf_only';
+[G,W,F,H]=pmm('channel.s2p', 4, opts);
+figure; plot_xf(G,F,H);legend('Data','Model','Error');
+figure; plot_haeig(G);
