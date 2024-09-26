@@ -28,7 +28,7 @@ for c=1:m
                  F,log10(e1),...
                  'LineWidth',1.5);
         else
-            plot(f,real(H(:,c,d)),'-',f,imag(H(:,c,d)),'-');
+            plot(F,real(H1(:,c,d)),'-',F,imag(H1(:,c,d)),'-');
         end
         miny=min(e1)*0.5;
         maxy=max(h)*2;
