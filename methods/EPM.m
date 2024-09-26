@@ -12,6 +12,7 @@ else
 end
 W=[];
 
+
 function [S2, done] = EPM_H (S1, F1,H1,opts)
 
 alpha=optget(opts,'epm_alpha',0.1);
@@ -547,7 +548,7 @@ end
 %         vec(dCk) = pinv(Zk)*y
 %         dC = dCk*inv(K)'
 
-Zk = Z*kron(invK,eye(length(D)));
+Zk = Z*kron_optimized(invK,length(D));
 xk = pinv(Zk)*y;      %      need verification
 % xk = Zk\(drv*i);
 dCk = reshape(xk,m,n);
@@ -576,6 +577,7 @@ end
 % x=fmincon(@norm_dCk,x0,[],[],Z,y);
 % fprintf('Perturbation: |dC| = %e\n',norm(dC,'fro'));
 % 
+
 
 
 

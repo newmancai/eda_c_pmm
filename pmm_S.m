@@ -1,4 +1,4 @@
-function [G,W,F,H,info] = pmm_S(inputfile,q,opts)
+function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold)
 % PMM Passive Macro Modeling (PMM) function.
 %
 %   [G, W, F, H, INFO] = PMM(INPUTFILE, Q, OPTS) performs passive macro modeling
@@ -29,15 +29,19 @@ function [G,W,F,H,info] = pmm_S(inputfile,q,opts)
 % Copyright 2012, Zuochang Ye, zuochang@tsinghua.edu.cn
 % --- Function code starts here ---
     if nargin < 3
-        opts = [];
         opts = pmm_default;
     end
-    opts.q = q;
+    %opts.q = q;
 
     [inputfile, outputfile, subcktname] = ParseInput(inputfile);
 
     %% Step 0: load data
     [F,H] = readTouchstone(inputfile,opts);
+
+    q = 2*countPeaksAndValleys3D(H,windowSize,proximityThreshold);
+    q = max(1,q);
+    q = min(q,50);
+    opts.q = q;
 
     [F,H] = freqinterp(F,H,opts);
 
@@ -74,7 +78,7 @@ function [G,W,F,H,info] = pmm_S(inputfile,q,opts)
         ss_export(G,W,subcktname,outputfile,opts);
     end
     print_info(info)
-    print_info_to_file(info,inputfile)
+    %print_info_to_file(info,inputfile)
 end
 
 %{
@@ -96,7 +100,7 @@ function print_info(info)
     
     % 输出每个信息的内容
     for c = 1:length(info)
-        fprintf('%-15s %-15s %-15s %-15s %-15s %-10s\n', ...
+        fprintf('%-15s %-15d %-15d %-15d %-15d %-10s\n', ...
             info{c}.func, info{c}.time, info{c}.error, info{c}.dc_error, info{c}.k_accuracy, info{c}.passivity);
     end
 end
