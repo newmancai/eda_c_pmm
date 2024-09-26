@@ -1,4 +1,4 @@
-!gitfunction [F,H]=ldstone(filename,opts);
+function [F,H]=ldstone(filename,opts);
 % ldstone -- load touchstone format data
 % Input 
 %     filename: filename of sNp data file.
