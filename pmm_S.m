@@ -78,7 +78,7 @@ function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold)
         ss_export(G,W,subcktname,outputfile,opts);
     end
     print_info(info)
-    %print_info_to_file(info,inputfile)
+    print_info_to_file(info,inputfile)
 end
 
 %{
@@ -100,8 +100,9 @@ function print_info(info)
     
     % 输出每个信息的内容
     for c = 1:length(info)
-        fprintf('%-15s %-15d %-15d %-15d %-15d %-10s\n', ...
-            info{c}.func, info{c}.time, info{c}.error, info{c}.dc_error, info{c}.k_accuracy, info{c}.passivity);
+        errorWithPercent = sprintf('%.1f%%', info{c}.error * 100);
+        fprintf('%-15s %-15.5f %-15s %-15.5f %-15.5f %-10s\n', ...
+            info{c}.func, info{c}.time, errorWithPercent, info{c}.dc_error, info{c}.k_accuracy, info{c}.passivity);
     end
 end
 
@@ -133,7 +134,7 @@ function print_info_to_file(info, input_filename)
     fprintf(fid, '%s\n', repmat('-', 1, total_length));
     
     for c = 1:length(info)
-        dataLine = sprintf('%-15s %-15e %-15e %-15e %-15e %-10s\n', ...
+        dataLine = sprintf('%-15s %-15.5f %-15.5f %-15.5f %-15.5f %-10s\n', ...
             info{c}.func, info{c}.time, info{c}.error, info{c}.dc_error, info{c}.k_accuracy, info{c}.passivity);
         fprintf(fid, dataLine);
     end
