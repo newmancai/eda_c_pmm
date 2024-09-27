@@ -5,11 +5,11 @@ pmm_setup
 
 opts=pmm_default_S;
 
-filename = 'channel.s2p';
+%filename = 'channel.s2p';
 %filename = 'pll_sa_doubler_spur_ind.s5p';
-%filename = 'sp125_uniform.s64p';
+filename = 'sp125_uniform.s64p';
 
-opts.method='epm_only';
+opts.method='vf_only';
 opts.enforceDC = 1;
 %opts.vf_niter1 =30;
 %opts.vf_niter2 =5;

@@ -1,4 +1,5 @@
 opts=pmm_default_S;
+addpath("teamwork\")
 filename = 'channel.s2p';
 %filename = 'pll_sa_doubler_spur_ind.s5p';
 %filename = 'sp125_uniform.s64p';
