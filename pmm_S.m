@@ -47,7 +47,7 @@ function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold)
 
     opts = select_method(size(H,1),q,opts);
     check_methods(opts);
-    opts
+    %opts
     %归一化F
     [F1,H1,scale] = datascale(F,H,opts);
     G = []; W = [];
@@ -77,8 +77,8 @@ function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold)
         W.C = W.C * 0;
         ss_export(G,W,subcktname,outputfile,opts);
     end
-    print_info(info)
-    print_info_to_file(info,inputfile)
+    %print_info(info)
+    %print_info_to_file(info,inputfile)
 end
 
 %{
@@ -100,7 +100,7 @@ function print_info(info)
     
     % 输出每个信息的内容
     for c = 1:length(info)
-        errorWithPercent = sprintf('%.1f%%', info{c}.error * 100);
+        errorWithPercent = sprintf('%.5f%%', info{c}.error * 100);
         fprintf('%-15s %-15.5f %-15s %-15.5f %-15.5f %-10s\n', ...
             info{c}.func, info{c}.time, errorWithPercent, info{c}.dc_error, info{c}.k_accuracy, info{c}.passivity);
     end
