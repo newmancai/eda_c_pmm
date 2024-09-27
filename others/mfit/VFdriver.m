@@ -1,4 +1,4 @@
-function [SER,rmserr,bigHfit,opts]=VFdriver(bigH,s,poles,opts); 
+function [SER,rmserr,bigHfit,opts]=VFdriver(bigH,s,poles,opts,F) 
 
 %   [SER,rmserr,bigHfit]=poleresiduefit(bigH,s,poles); 
 %   [SER,rmserr,bigHfit]=poleresiduefit(bigH,s,poles,opts); 
@@ -379,15 +379,42 @@ else
   weight_sum=ones(1,Ns);
 end  
 
+previousValue = 0.1;  % 初始化上次计算的值
+threshold = 0.001;     % 设定1%的阈值
+
 if Nc>1 %Will do only for multi-terminal case
   if opts.screen==1
     disp('****Calculating improved initial poles by fitting column sum ...')
   end
   for iter=1:Niter1
-     if opts.screen==1 
-       disp(['   Iter ' num2str(iter)])
-     end  
-    [SER,poles,rmserr,fit]=vectfit3(f_sum,s,poles,weight_sum,VF);     
+      if opts.screen==1
+          disp(['   Iter ' num2str(iter)])
+      end
+      if iter == 1 || mod(iter, 5) == 0
+          VF.skip_res = 0;
+      else
+          VF.skip_res = 1;
+      end
+      [SER,poles,rmserr,fit]=vectfit3(f_sum,s,poles,weight_sum,VF);
+      if iter == 1
+          % 第一次计算 currentValue
+          SER2 = tri2full(SER);
+          currentValue = norm_error(SER2,F,reshape(f_sum, 1, 1, Ns));  % 计算当前的值, 替换成实际的函数或计算逻辑
+          previousValue = currentValue;    % 更新previousValue
+          continue;  % 第一次不进行比较，跳过剩下逻辑
+      end
+      if mod(iter, 5) == 0
+          SER2 = tri2full(SER);
+          currentValue = norm_error(SER2,F,reshape(f_sum, 1, 1, Ns));
+          relativeDifference = abs((currentValue - previousValue) / previousValue);
+          % 检查相差是否不超过1%%
+          if relativeDifference <= threshold && currentValue<0.10
+              %fprintf('在 iter1 = %d 时，相差不超过 1%%%%，停止循环1。\n', iter);
+              break;
+          end
+          % 更新 previousValue 为当前值
+          previousValue = currentValue;
+      end
   end
 end
 
@@ -399,9 +426,32 @@ for iter=1:Niter2
   if opts.screen==1  
     disp(['   Iter ' num2str(iter)])
   end  
-  if iter==Niter2, VF.skip_res=0; end
+  if iter == 1 || iter==Niter2 || mod(iter, 5) == 0
+      VF.skip_res = 0;
+  else 
+      VF.skip_res = 1;
+  end
   %[SER,poles,rmserr,fit1]=vectfit2(f,s,poles,weight,VF);  
-  [SER,poles,rmserr,fit1]=vectfit3(f,s,poles,weight,VF);    
+  [SER,poles,rmserr,fit1]=vectfit3(f,s,poles,weight,VF); 
+  if iter == 1
+      % 第一次计算 currentValue
+      SER2 = tri2full(SER);
+      currentValue = norm_error(SER2,F,bigH);  % 计算当前的值, 替换成实际的函数或计算逻辑
+      previousValue = currentValue;    % 更新previousValue
+      continue;  % 第一次不进行比较，跳过剩下逻辑
+  end
+  if mod(iter, 5) == 0
+      SER2 = tri2full(SER);
+      currentValue = norm_error(SER2,F,bigH);
+      relativeDifference = abs((currentValue - previousValue) / previousValue);
+      % 检查相差是否不超过3%
+      if relativeDifference <= threshold && currentValue<0.10
+          %fprintf('在 iter2 = %d 时，相差不超过 1%%%%，停止循环2。\n', iter);
+          break;
+      end
+      % 更新 previousValue 为当前值
+      previousValue = currentValue;
+  end
 end
 if Niter2==0
    VF.skip_res=0; VF.skip_pole=1;

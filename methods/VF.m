@@ -25,13 +25,18 @@ opt1.cmplx_ss=0;
 opt1.weightparam=optget(opts,'wgt_scheme',3); %weight(s)=1/sqrt(abs(Hij(s)));
 poles=[];
 s1=2*pi*1j*F;
-Gc=VFdriver(H,s1,poles,opt1); 
+Gc=VFdriver(H,s1,poles,opt1,F); 
 %读取opts的parametertype,若无定义则为Y
 Gc.parametertype=optget(opts,'parametertype','Y');
 
 G=ss_real(Gc);
+[r2] = passivity_violation(G);
+if isempty(r2)
+    opts.enforceDC = 0;
+else
+    opts.enforceDC = 1;
+end
 G = optimizeSystem(G,F,H,opts);
-
 W=[];
 
 end
