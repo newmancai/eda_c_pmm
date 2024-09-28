@@ -27,15 +27,19 @@ poles=[];
 s1=2*pi*1j*F;
 Gc=VFdriver(H,s1,poles,opt1,F); 
 %读取opts的parametertype,若无定义则为Y
-Gc.parametertype=optget(opts,'parametertype','Y');
+Gc.parametertype=optget(opts,'parametertype','S');
 
+%如果一开始是passivity，则不拟合到f=0的点
 G=ss_real(Gc);
 [r2] = passivity_violation(G);
-if isempty(r2)
+%if isempty(r2) && opts.enforce==1
+if isempty(r2) ||(size(H,1)^2*opt1.N >65536)
     opts.enforceDC = 0;
+    %G.D = real(H(:,:,1) + G.C * (G.A \ G.B)); %强制赋值
 else
     opts.enforceDC = 1;
 end
+
 G = optimizeSystem(G,F,H,opts);
 W=[];
 

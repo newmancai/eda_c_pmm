@@ -1,0 +1,77 @@
+function real_num = process_frequency_response(y11_si, s, poles, residues, d)
+    % remove_contributions - 去除常数项、一阶项和实极点的贡献
+    %
+    % 输入参数：
+    % y11_si    - 原始频率响应样本，大小为 MxMxs
+    % s         - 频率样本点向量
+    % poles     - 极点矩阵，大小为 (Nq, 1)，包含 Nq 个复数极点
+    % residues  - 留数矩阵，大小为 MxMxNq，M 为维度，Nq 为极点数量
+    % d         - 常数项，大小为 MxM
+    % h         - 一阶项，大小为 MxM
+    %
+    % 输出参数：
+    % y11_si_hat - 去除贡献后的频率响应样本，大小为 MxMxs
+
+    [M, ~, Nf] = size(y11_si);  % M 为矩阵维度，Nf 为频率样本点个数
+    [Nq, ~] = size(poles);      % Nq 为极点数量
+    
+    % 初始化修改后的频率响应样本
+    y11_si_hat = y11_si; 
+    real_num = 0;
+    
+    % 去除实极点的贡献
+    for k = 1:Nq
+        if isreal(poles(k))  % 检查极点是否为实数
+            real_num = real_num + 1;
+            for i = 1:Nf
+                y11_si_hat(:,:,i) = y11_si_hat(:,:,i) - residues(:,:,k) ./ (s(i) - poles(k));
+            end
+        end
+    end
+    % 第5步：添加负频率的共轭对称性
+    N = Nf;  % 假设频率样本数 Nf = N
+    y11_neg_freq = conj(y11_si_hat(:,:,end-1:-1:1));  % 共轭对称负频率部分
+    y11_full_spectrum = cat(3, y11_si_hat, y11_neg_freq);  % 合并正负频率
+    
+    % 对每个 MxM 的频率响应矩阵进行 IFFT
+    x = zeros(M, M, 2*N-1);  % 初始化时间序列矩阵
+    for i = 1:M
+        for j = 1:M
+            spectrum_ij = squeeze(y11_full_spectrum(i,j,:));
+            x(i,j,:) = ifft(spectrum_ij, 'symmetric');  % IFFT 转换
+        end
+    end
+    
+    % 第6步：构建系数矩阵 R 并进行 SVD
+    x_1d = squeeze(x(1, 1, :));  % 提取 1x1x20001 的部分，并转换为 20001x1 的数组
+    p = 40;  % 假设 p = 4
+    R = build_matrix(x_1d, p);  % 构建 R 矩阵
+    [~,S,]=svd(R);
+    for i=1:40
+        if(S(i,i)/S(1,1)<0.00001)  %0.001为判定阶数的阈值
+            break;
+        end
+    end
+    real_num
+end
+
+function R = build_matrix(x_1d, p)
+    % 构建一个 p * (N-p-1) 的矩阵
+    %
+    % 输入：
+    % x_1d - 一维数组，长度为 N
+    % p    - 矩阵的行数
+    %
+    % 输出：
+    % R - 构建好的矩阵，大小为 p x (N-p-1)
+    
+    N = length(x_1d);  % 获取 x_1d 的长度
+    
+    % 初始化 R 矩阵，大小为 p x (N-p-1)
+    R = zeros(p, N-p-1);
+    
+    % 填充矩阵 R
+    for i = 1:p
+        R(i, :) = x_1d(i:N-p+i-2);
+    end
+end

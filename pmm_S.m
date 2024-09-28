@@ -1,4 +1,4 @@
-function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold)
+function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold,q)
 % PMM Passive Macro Modeling (PMM) function.
 %
 %   [G, W, F, H, INFO] = PMM(INPUTFILE, Q, OPTS) performs passive macro modeling
@@ -37,11 +37,18 @@ function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold)
 
     %% Step 0: load data
     [F,H] = readTouchstone(inputfile,opts);
-
-    q = 2*countPeaksAndValleys3D(H,windowSize,proximityThreshold);
-    q = max(1,q);
-    q = min(q,50);
-    opts.q = q;
+    if nargin < 5
+        q = 2*countPeaksAndValleys3D(H,windowSize,proximityThreshold);
+        q = max(1,q);
+        q = min(q,50);
+        fprintf("初始阶数为%d ",q)  
+    end
+    opts.q = q+2;
+%     if size(H,1)*q<500
+%         opts.q = 2*q;
+%     else
+%         opts.q = q;
+%     end
 
     [F,H] = freqinterp(F,H,opts);
 
@@ -60,9 +67,9 @@ function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold)
             if ~info_k.success
                break;
             end
-            if opts.enforceDC == 1
-                G.D = H1(:,:,1) + G.C * (G.A \ G.B);
-            end
+%             if if opts.enforceDC == 1 %原本是if opts.enforceDC == 1，这里我认为只有原本无源才能收敛，得两分
+%                 G.D = real(H1(:,:,1) + G.C * (G.A \ G.B));
+%             end
         end
     end
 
@@ -165,9 +172,58 @@ function [G,W,info] = func_call(funcname,G,W,F1,H1,opts)
     passive_in  = pmm_methods.(funcname).passive_in;
     passive_out = pmm_methods.(funcname).passive_out;
 
-    t0 = cputime;
-    [G,W] = func(G,W,F1,H1,opts);
-    t = cputime - t0;
+    if  opts.Sample == 1
+        t0 = cputime;
+        delta=5;
+        nPoints = size(H1, 3);  
+        allChangePoints = false(nPoints, 1);  
+
+        % 计算实部零交叉点并标记变更点
+        H2_real = real(diff(H1));  
+        for i = 1:size(H2_real, 1)
+            for j = 1:size(H2_real, 2)
+                zeroCrossings = find(diff(sign(H2_real(i, j, :))));  % 实部的零交叉点
+                changePoints = zeroCrossings + 1; 
+                for k = 1:length(changePoints)
+                    lowerBound = max(changePoints(k) - delta, 1);  % 确保下限不小于1
+                    upperBound = min(changePoints(k) + delta, nPoints);  % 确保上限不大于nPoints
+                    allChangePoints(lowerBound:upperBound) = true;  % 标记变化点
+                end
+            end
+        end
+
+        % 计算虚部零交叉点并标记变更点
+        H2_imag = imag(diff(H1));  
+        for i = 1:size(H2_imag, 1)
+            for j = 1:size(H2_imag, 2)
+                zeroCrossings = find(diff(sign(H2_imag(i, j, :))));  % 虚部的零交叉点
+                changePoints = zeroCrossings + 1; 
+                for k = 1:length(changePoints)
+                    lowerBound = max(changePoints(k) - delta, 1);  % 确保下限不小于1
+                    upperBound = min(changePoints(k) + delta, nPoints);  % 确保上限不大于nPoints
+                    allChangePoints(lowerBound:upperBound) = true;  % 标记变化点
+                end
+            end
+        end
+
+        odd = (1:20:nPoints)';
+        allChangePoints(odd) = true;  
+
+        % 提取所有唯一的变更点索引
+        uniqueChangePoints = find(allChangePoints);  
+ 
+        H2=H1(:,:,uniqueChangePoints);
+        F2=F1(uniqueChangePoints,1);
+
+
+        [G,W] = func(G,W,F2,H2,opts);
+        t = cputime - t0;
+    else
+        t0 = cputime;
+        [G,W] = func(G,W,F1,H1,opts);
+        t = cputime - t0;
+    end
+    
 
     [r2,f2] = passivity_violation(G);
     if passive_out && ~isempty(r2)
@@ -182,7 +238,7 @@ function [G,W,info] = func_call(funcname,G,W,F1,H1,opts)
     info.func = func2str(func);
     info.time = t;
     info.error = norm_error(G,F1,H1,opts);
-    info.k_accuracy = info.error*size(H1,1); 
+    info.k_accuracy = info.error*opts.q; 
     if isempty(r2)
         info.passivity = 'passive';
     else
