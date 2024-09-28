@@ -32,7 +32,7 @@ Gc.parametertype=optget(opts,'parametertype','S');
 %如果一开始是passivity，则不拟合到f=0的点
 G=ss_real(Gc);
 [r2] = passivity_violation(G);
-<<<<<<< HEAD
+
 %if isempty(r2) && opts.enforce==1
 if isempty(r2) ||(size(H,1)^2*opt1.N >65536)
     opts.enforceDC = 0;
@@ -41,13 +41,6 @@ else
     opts.enforceDC = 1;
 end
 
-=======
-if isempty(r2)
-    opts.enforceDC = 0;
-else
-    opts.enforceDC = 1;
-end
->>>>>>> 9795d410fe9d13233d9941c3bede4a0575432838
 G = optimizeSystem(G,F,H,opts);
 W=[];
 

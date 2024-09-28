@@ -1,67 +1,50 @@
 close all
 clear
 clc
-<<<<<<< HEAD
+
 t1=clock;
-=======
->>>>>>> 9795d410fe9d13233d9941c3bede4a0575432838
+
 addpath('..');
 pmm_setup
 opts=pmm_default_S;
 opts.method='vf_only';
 opts.enforceDC = 1;
-<<<<<<< HEAD
+
 opts.enforce = 1;
 opts.Sample =1;
 opts.vf_niter1 =600;
 opts.vf_niter2 =300;
 
 windowSize = 30;
-=======
-opts.vf_niter1 =300;
-opts.vf_niter2 =1000;
-
-windowSize = 20;
->>>>>>> 9795d410fe9d13233d9941c3bede4a0575432838
-proximityThreshold =30;
+proximityThreshold =10;
 numRuns = 1;
+info1 = [];
 
 filenames = {'channel.s2p', 'pll_sa_doubler_spur_ind.s5p', 'sp125_uniform.s64p'};
 
-filename = filenames{1};  % 获取当前文件名
-<<<<<<< HEAD
+filename = filenames{2};  % 获取当前文件名
 
 [G,~,F,H,info]=pmm_S(filename,opts,windowSize,proximityThreshold);
 print_info(info,extract_filename(filename));
 [residues,poles]=ss2pr(G.A,G.B,G.C);
 Hinf=G.D;
 order = process_frequency_response(H,F*2*pi*1j, poles, residues,Hinf,0);
-fprintf("推荐阶数：%d ",order);
-if (order*size(H,1)^2<7e4)
+fprintf("推荐阶数：%d \n",order);
+if (order*size(H,1)^2<7e4)&&(order~=size(poles,1))
     [G1,~,F1,H1,info1]=pmm_S(filename,opts,windowSize,proximityThreshold,order);
     print_info(info1,extract_filename(filename));
-    [residues1,poles1]=ss2pr(G.A,G.B,G.C);
-    Hinf1=G.D;
+    [residues1,poles1]=ss2pr(G1.A,G1.B,G1.C);
+    Hinf1=G1.D;
 end
-if(info1{1}.k_accuracy>info{1}.k_accuracy)
-    generate_model_dat(poles,residues,Hinf);
-else
+if ~isempty(info1)&&(info1{1}.k_accuracy>info{1}.k_accuracy)
     generate_model_dat(poles1,residues1,Hinf1);
+else
+    generate_model_dat(poles,residues,Hinf);
 end
 %figure; plot_xf(G,F,H);legend('Data','Model','Error');
 %figure; plot_haeig(G);
 t2=clock;
-etime(t2,t1)
-=======
-[G,W,F,H,info]=pmm_S(filename,opts,windowSize,proximityThreshold);
-print_info(info,extract_filename(filename));
-[residues,poles]=ss2pr(G.A,G.B,G.C);
-Hinf=G.D;
-generate_model_dat(poles,residues,Hinf);
-figure; plot_xf(G,F,H);legend('Data','Model','Error');
-figure; plot_haeig(G);
-
->>>>>>> 9795d410fe9d13233d9941c3bede4a0575432838
+fprintf("非轻量化总程序耗时：%.5f s\n",etime(t2,t1))
 
 function new_filename = extract_filename(original_filename)
     % 提取文件名前部分并保留后缀
@@ -86,27 +69,16 @@ end
 
 function print_info(info,filename)
 %sss
-<<<<<<< HEAD
     col_widths = [15,15, 15, 20, 15, 15, 10]; % 各列宽度
     total_length = sum(col_widths) + length(col_widths) - 1; % 计算总长度（包含空格）
     fprintf('%-15s %-15s %-15s %-20s %-15s %-15s %-10s\n', ...
-=======
-    col_widths = [15, 15, 15, 15, 15, 10]; % 各列宽度
-    total_length = sum(col_widths) + length(col_widths) - 1; % 计算总长度（包含空格）
-    fprintf('%-15s %-15s %-15s %-15s %-15s %-15s %-10s\n', ...
->>>>>>> 9795d410fe9d13233d9941c3bede4a0575432838
         'DocName','FuncName', 'Time', 'Error(Norm)', 'Error(DC)', 'K_accuracy', 'Passivity');
     fprintf('%s\n', repmat('-', 1, total_length));
     
     % 输出每个信息的内容
     for c = 1:length(info)
-<<<<<<< HEAD
         errorWithPercent = sprintf('%.9f%%', info{c}.error * 100);
         fprintf('%-15s %-15s %-15.5f %-20s %-15.5f %-15.8f %-10s\n', ...
-=======
-        errorWithPercent = sprintf('%.5f%%', info{c}.error * 100);
-        fprintf('%-15s %-15s %-15.5f %-15s %-15.5f %-15.5f %-10s\n', ...
->>>>>>> 9795d410fe9d13233d9941c3bede4a0575432838
             filename,info{c}.func, info{c}.time, errorWithPercent, info{c}.dc_error, info{c}.k_accuracy, info{c}.passivity);
     end
 end

@@ -62,8 +62,10 @@ function real_num = process_frequency_response(y11_si, s, poles, residues, d,all
     p = 40;  
     R = build_matrix(x_1d, p);  
     S = svds(R, p);
+    min_threshold = 0.00000001;  % 阈值范围的最小值
+    max_threshold = 0.01;        % 阈值范围的最大值
     for i = 2:2:p
-        if S(i)/S(1) < 0.00001  
+        if S(i)/S(1) < calculate_threshold(real_num, 1, min_threshold, max_threshold)  
             break;
         end
     end
@@ -88,4 +90,14 @@ function R = build_matrix(x_1d, p)
     for i = 1:p
         R(i, :) = x_1d(i:N-p+i-2);
     end
+end
+
+function threshold = calculate_threshold(real_num, sum_num, min_threshold, max_threshold)
+    % 对阈值范围取对数
+    log_threshold_min = log10(min_threshold);
+    log_threshold_max = log10(max_threshold);
+    
+    % 计算对应的阈值
+    log_threshold = log_threshold_min + (log_threshold_max - log_threshold_min) * (real_num / sum_num);
+    threshold = 10^log_threshold;
 end

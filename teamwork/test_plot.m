@@ -1,6 +1,6 @@
 opts=pmm_default_S;
 filename = 'pll_sa_doubler_spur_ind.s5p';
-%filename = 'channel.s2p';
+filename = 'channel.s2p';
 [F,H] = readTouchstone(filename,opts);
 % 获取矩阵尺寸
 [M, ~, n] = size(H);

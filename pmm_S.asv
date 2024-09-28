@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold,q)
+=======
+function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold)
+>>>>>>> 9795d410fe9d13233d9941c3bede4a0575432838
 % PMM Passive Macro Modeling (PMM) function.
 %
 %   [G, W, F, H, INFO] = PMM(INPUTFILE, Q, OPTS) performs passive macro modeling
@@ -38,17 +42,23 @@ function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold,q)
     %% Step 0: load data
     [F,H] = readTouchstone(inputfile,opts);
     if nargin < 5
-        q = 2*(countPeaksAndValleys3D(H,windowSize,proximityThreshold));
+        q = 2*countPeaksAndValleys3D(H,windowSize,proximityThreshold);
         q = max(1,q);
         q = min(q,50);
-        fprintf("初始阶数为%d \n",q)  
+        fprintf("初始阶数为%d ",q)  
     end
-    opts.q = q;
+    opts.q = q+2;
 %     if size(H,1)*q<500
 %         opts.q = 2*q;
 %     else
 %         opts.q = q;
 %     end
+
+    q = 2*countPeaksAndValleys3D(H,windowSize,proximityThreshold);
+    q = max(1,q);
+    q = min(q,50);
+    opts.q = q;
+
     [F,H] = freqinterp(F,H,opts);
 
     opts = select_method(size(H,1),q,opts);
@@ -58,7 +68,7 @@ function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold,q)
     [F1,H1,scale] = datascale(F,H,opts);
     G = []; W = [];
     if isfield(opts,'Func')
-        %fprintf('\n');
+        fprintf('\n');
         info = [];
         for k = 1:length(opts.Func)
             [G,W,info_k] = func_call(opts.Func{k},G,W,F1,H1,opts);
