@@ -7,3 +7,5 @@ opts.poletype       ='lincmplx';
 opts.tol            = 0;
 opts.enforceDC      = 0;
 opts.wgt_scheme     = 3;
+opts.Sample         = 1;
+opts.jk             = 1;
