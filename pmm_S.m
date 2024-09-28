@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold,q)
+=======
+function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold)
+>>>>>>> 9795d410fe9d13233d9941c3bede4a0575432838
 % PMM Passive Macro Modeling (PMM) function.
 %
 %   [G, W, F, H, INFO] = PMM(INPUTFILE, Q, OPTS) performs passive macro modeling
@@ -49,6 +53,11 @@ function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold,q)
 %     else
 %         opts.q = q;
 %     end
+
+    q = 2*countPeaksAndValleys3D(H,windowSize,proximityThreshold);
+    q = max(1,q);
+    q = min(q,50);
+    opts.q = q;
 
     [F,H] = freqinterp(F,H,opts);
 
