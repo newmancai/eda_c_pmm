@@ -1,4 +1,4 @@
-function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold,q)
+function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold)
 % PMM Passive Macro Modeling (PMM) function.
 %
 %   [G, W, F, H, INFO] = PMM(INPUTFILE, Q, OPTS) performs passive macro modeling
@@ -37,39 +37,38 @@ function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold,q)
 
     %% Step 0: load data
     [F,H] = readTouchstone(inputfile,opts);
-
-    proximityThreshold=ceil(size(H,1)/2);%合并阈值设为和端口数量相关，不然大电路无法运行
-    if nargin < 5
-        q = 2*(countPeaksAndValleys3D(H,windowSize,proximityThreshold));
-        q = max(1,q);
-        q = min(q,50);
-        fprintf("初始阶数为%d \n",q)  
-    end
-    opts.q = q;
-%     if size(H,1)*q<500
-%         opts.q = 2*q;
-%     else
-%         opts.q = q;
+    
+    proximityThreshold=ceil(size(H,1)/2)%合并阈值设为和端口数量相关，不然大电路无法运行
+    
+%     if nargin < 5
+    [valleypeakIndices,q] = countPeaksAndValleys3D(H,windowSize,proximityThreshold);
+    q = 2*q
+    q = max(1,q);
+    q = min(q,50);
 %     end
-    [F,H] = freqinterp(F,H,opts);
+    
+    opts.q = q*opts.jk;
 
+    [F,H] = freqinterp(F,H,opts);
+    
     opts = select_method(size(H,1),q,opts);
     check_methods(opts);
-    %opts
+%     opts.q = opts.q*2;
+    
     %归一化F
     [F1,H1,scale] = datascale(F,H,opts);
     G = []; W = [];
     if isfield(opts,'Func')
-        %fprintf('\n');
+        fprintf('\n');
         info = [];
         for k = 1:length(opts.Func)
-            [G,W,info_k] = func_call(opts.Func{k},G,W,F1,H1,opts);
+            [G,W,info_k] = func_call(opts.Func{k},G,W,F1,H1,opts,valleypeakIndices);
             info{k} = info_k;
             if ~info_k.success
                break;
             end
-%             if if opts.enforceDC == 1 %原本是if opts.enforceDC == 1，这里我认为只有原本无源才能收敛，得两分
-%                 G.D = real(H1(:,:,1) + G.C * (G.A \ G.B));
+%             if opts.enforceDC == 1
+%                 G.D = H1(:,:,1) + G.C * (G.A \ G.B);
 %             end
         end
     end
@@ -85,7 +84,7 @@ function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold,q)
         W.C = W.C * 0;
         ss_export(G,W,subcktname,outputfile,opts);
     end
-    %print_info(info)
+    print_info(info)
     %print_info_to_file(info,inputfile)
 end
 
@@ -108,9 +107,8 @@ function print_info(info)
     
     % 输出每个信息的内容
     for c = 1:length(info)
-        errorWithPercent = sprintf('%.5f%%', info{c}.error * 100);
-        fprintf('%-15s %-15.5f %-15s %-15.5f %-15.5f %-10s\n', ...
-            info{c}.func, info{c}.time, errorWithPercent, info{c}.dc_error, info{c}.k_accuracy, info{c}.passivity);
+        fprintf('%-15s %-15d %-15d %-15d %-15d %-10s\n', ...
+            info{c}.func, info{c}.time, info{c}.error, info{c}.dc_error, info{c}.k_accuracy, info{c}.passivity);
     end
 end
 
@@ -142,7 +140,7 @@ function print_info_to_file(info, input_filename)
     fprintf(fid, '%s\n', repmat('-', 1, total_length));
     
     for c = 1:length(info)
-        dataLine = sprintf('%-15s %-15.5f %-15.5f %-15.5f %-15.5f %-10s\n', ...
+        dataLine = sprintf('%-15s %-15e %-15e %-15e %-15e %-10s\n', ...
             info{c}.func, info{c}.time, info{c}.error, info{c}.dc_error, info{c}.k_accuracy, info{c}.passivity);
         fprintf(fid, dataLine);
     end
@@ -166,66 +164,81 @@ end
     
     @return [G, W, info] Updated state-space model and frequency response.
 %}
-function [G,W,info] = func_call(funcname,G,W,F1,H1,opts)
+function [G,W,info] = func_call(funcname,G,W,F1,H1,opts,valleypeakIndices)
     global pmm_methods;
 
     func        = pmm_methods.(funcname).func;
     passive_in  = pmm_methods.(funcname).passive_in;
     passive_out = pmm_methods.(funcname).passive_out;
-
+    
+    
+    valleypeak=2.*pi.*F1(valleypeakIndices);
+    H1_choose = sum(sum(H1(:,:,valleypeakIndices)));
+    [H1_choose_sorted, indices] = sort(abs(H1_choose(:)), 'descend');
+    valleypeak = valleypeak(indices);
+    
+    
+    
+    
     if  opts.Sample == 1
+    delta=10;
+    delta2=2;
+    delta3=50;
+%     H2=real(diff(H1));
+    allChangePoints = [] ;
+%     for i =1:size(H2,1)
+%         for j =1:size(H2,2)
+%             zeroCrossings = find(diff(sign(H2(i,j,:)))); % 计算零交叉点
+%             changePoints = zeroCrossings + 1; % 调整索引
+%             lowerBound = max(changePoints - delta, 1); % 确保不小于0
+%             upperBound = min(changePoints + delta, size(H1,3)); % 确保不大于endValue
+%             allChangePoints = [allChangePoints; (lowerBound:upperBound)']; 
+%         end
+%     end
+%     H2=imag(diff(H1));
+%     for i =1:size(H2,1)
+%         for j =1:size(H2,2)
+%             zeroCrossings = find(diff(sign(H2(i,j,:)))); % 计算零交叉点
+%             changePoints = zeroCrossings + 1; % 调整索引
+%             lowerBound = max(changePoints - delta, 1); % 确保不小于0
+%             upperBound = min(changePoints + delta, size(H1,3)); % 确保不大于endValue
+%             allChangePoints = [allChangePoints;(lowerBound:upperBound)']; 
+%         end
+%     end
+    
+    for i =1:size(valleypeakIndices,1)
+            lowerBound = max(valleypeakIndices(i) - delta, 1); % 确保不小于0
+            upperBound = min(valleypeakIndices(i) + delta, size(H1,3)); % 确保不大于endValue
+            allChangePoints = [allChangePoints; (lowerBound:delta2:upperBound)']; 
+    end
+    
+    odd=(1:delta3:size(H1,3))';
+    allChangePoints = [allChangePoints;odd]; 
+    uniqueChangePoints = unique(allChangePoints);
+    
+    H2=H1(:,:,uniqueChangePoints);
+    F2=F1(uniqueChangePoints,1);
+    
+    
+%     size(H2,3)
+%     size(H1,3)
+    
+    
+    t0 = cputime;
+    [G,W] = func(G,W,F2,H2,opts,valleypeak);
+    t = cputime - t0;
+    end
+    
+    
+    if  opts.Sample == 2
         t0 = cputime;
-        delta=5;
-        nPoints = size(H1, 3);  
-        allChangePoints = false(nPoints, 1);  
-
-        % 计算实部零交叉点并标记变更点
-        H2_real = real(diff(H1));  
-        for i = 1:size(H2_real, 1)
-            for j = 1:size(H2_real, 2)
-                zeroCrossings = find(diff(sign(H2_real(i, j, :))));  % 实部的零交叉点
-                changePoints = zeroCrossings + 1; 
-                for k = 1:length(changePoints)
-                    lowerBound = max(changePoints(k) - delta, 1);  % 确保下限不小于1
-                    upperBound = min(changePoints(k) + delta, nPoints);  % 确保上限不大于nPoints
-                    allChangePoints(lowerBound:upperBound) = true;  % 标记变化点
-                end
-            end
-        end
-
-        % 计算虚部零交叉点并标记变更点
-        H2_imag = imag(diff(H1));  
-        for i = 1:size(H2_imag, 1)
-            for j = 1:size(H2_imag, 2)
-                zeroCrossings = find(diff(sign(H2_imag(i, j, :))));  % 虚部的零交叉点
-                changePoints = zeroCrossings + 1; 
-                for k = 1:length(changePoints)
-                    lowerBound = max(changePoints(k) - delta, 1);  % 确保下限不小于1
-                    upperBound = min(changePoints(k) + delta, nPoints);  % 确保上限不大于nPoints
-                    allChangePoints(lowerBound:upperBound) = true;  % 标记变化点
-                end
-            end
-        end
-
-        odd = (1:20:nPoints)';
-        allChangePoints(odd) = true;  
-
-        % 提取所有唯一的变更点索引
-        uniqueChangePoints = find(allChangePoints);  
- 
-        H2=H1(:,:,uniqueChangePoints);
-        F2=F1(uniqueChangePoints,1);
-
-
-        [G,W] = func(G,W,F2,H2,opts);
-        t = cputime - t0;
-    else
-        t0 = cputime;
-        [G,W] = func(G,W,F1,H1,opts);
+        
+        [G,W] = func(G,W,F1,H1,opts,valleypeak);
         t = cputime - t0;
     end
     
-
+    
+    
     [r2,f2] = passivity_violation(G);
     if passive_out && ~isempty(r2)
         fprintf('Warning: %s claims but fails to ensure passivity of the system.\n', funcname);
@@ -245,9 +258,12 @@ function [G,W,info] = func_call(funcname,G,W,F1,H1,opts)
     else
         info.passivity = 'non-passive';
     end
-
+   
+%     G.D=H1(:,:,1)+G.C * (G.A \ G.B);
+    
     H0 = H1(:,:,1);
     HH = G.D - G.C * (G.A \ G.B);
+    
     info.dc_error = max(vec(abs(H0 - HH)));
 end
 
