@@ -1,4 +1,4 @@
-function y11_si_hat = test_process(y11_si, s, poles, residues, d,all_type)
+function y11_si_hat = test_process(y11_si, s, poles, residues, d)
     % PROCESS_FREQUENCY_RESPONSE - 去除常数项、一阶项和实极点的贡献，添加负频率对称性并进行 SVD 分析
     %
     % 输入参数：
@@ -17,12 +17,12 @@ function y11_si_hat = test_process(y11_si, s, poles, residues, d,all_type)
     
     y11_si_hat = zeros(M,M,Nf); 
     
-    % 第一步：去除常数项 d
+    % 第一步：加常数项 d
     for i = 1:Nf
         y11_si_hat(:,:,i) = y11_si_hat(:,:,i) + d; 
     end
 
-    % 第二步：去除实极点的贡献
+    % 第二步：加实极点的贡献
     for k = 1:Nq
         for i = 1:Nf
             y11_si_hat(:,:,i) = y11_si_hat(:,:,i) + residues(:,:,k) ./ (s(i) - poles(k));

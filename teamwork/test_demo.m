@@ -21,9 +21,9 @@ proximityThreshold =64;
 numRuns = 1;
 info1 = [];
 
-filenames = {'channel.s2p', 'pll_sa_doubler_spur_ind.s5p', 'sp125_uniform.s64p'};
+filenames = {'channel.s2p', 'pll_sa_doubler_spur_ind.s5p', 'sp125_uniform.s64p','pll_cko_lo1_top_l.s34p','1848-191031.s384p'};
 
-filename = filenames{3};  % 获取当前文件名
+filename = filenames{4};  % 获取当前文件名
 
 [G,~,F,H,info]=pmm_S(filename,opts,windowSize,proximityThreshold);
 print_info(info,extract_filename(filename));
@@ -31,7 +31,7 @@ print_info(info,extract_filename(filename));
 Hinf=G.D;
 order = process_frequency_response(H,F*2*pi*1j, poles, residues,Hinf);
 fprintf("推荐阶数：%d \n",order);
-if (order*size(H,1)^2<7e4)&&(order~=size(poles,1))
+if (order*size(H,1)^2<7e4)&&(order>size(poles,1))
     [G1,~,F1,H1,info1]=pmm_S(filename,opts,windowSize,proximityThreshold,order);
     print_info(info1,extract_filename(filename));
     [residues1,poles1]=ss2pr(G1.A,G1.B,G1.C);

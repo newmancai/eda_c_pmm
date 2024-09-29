@@ -12,7 +12,7 @@ function real_num = process_frequency_response(y11_si, s, poles, residues, d)
     % real_num  - 实极点的数量和 SVD 阶数分析后的修正值
     
     tic
-    [M, ~, Nf] = size(y11_si);  
+    [~, ~, Nf] = size(y11_si);  
     [Nq, ~] = size(poles);      
     
     y11_si_hat = y11_si; 
@@ -33,7 +33,7 @@ function real_num = process_frequency_response(y11_si, s, poles, residues, d)
         end
     end
 
-    % 第五步：添加负频率的共轭对称性
+    % 第三步：添加负频率的共轭对称性
     N = Nf;  
     y11_neg_freq = conj(y11_si_hat(:,:,end-1:-1:1));  
     y11_full_spectrum = cat(3, y11_si_hat, y11_neg_freq);  
@@ -64,16 +64,19 @@ function real_num = process_frequency_response(y11_si, s, poles, residues, d)
 %         end
 %     end
     
-    % 第六步：构建系数矩阵 R 并进行 SVD 分析
+    % 第四步：构建系数矩阵 R 并进行 SVD 分析
     x_1d = squeeze(x(1, 1, :));  
     p = 40;  
     R = build_matrix(x_1d, p);  
     S = svds(R, p);
-    min_threshold = 1e-7;  % 阈值范围的最小值
+    min_threshold = 1e-6;  % 阈值范围的最小值filename
     max_threshold = 1;        % 阈值范围的最大值
     SS = sum(S.^2);
+    for i =1:p
+        v(i)=1-sum(S(1:i).^2)/SS;
+    end
     for i = 1:1:p
-        if S(i)==0||((sum(S(1:i).^2)/SS >=1-calculate_threshold(real_num, Nq, min_threshold, max_threshold))&&(S(i-1)/S(i)<3))
+        if v(i)<=calculate_threshold(real_num,Nq, min_threshold, max_threshold)&&(v(i-1)/v(i)<2)&&(v(i)/v(i+1)<2)
             break;
         end
     end

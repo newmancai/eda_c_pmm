@@ -37,7 +37,8 @@ function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold,q)
 
     %% Step 0: load data
     [F,H] = readTouchstone(inputfile,opts);
-    proximityThreshold=ceil(size(H,1)/2);
+
+    proximityThreshold=ceil(size(H,1)/2);%合并阈值设为和端口数量相关，不然大电路无法运行
     if nargin < 5
         q = 2*(countPeaksAndValleys3D(H,windowSize,proximityThreshold));
         q = max(1,q);

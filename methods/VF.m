@@ -75,7 +75,13 @@ function G = optimizeSystem(G, F, H, opts)
         % Set up the quadratic programming problem
         Q = R' * R;
         f = -QG' * R;
-        options = optimset('LargeScale', 'off', 'TypicalX', [vec(G.C); vec(G.D)], 'Display', 'off');
+        vecG = [vec(G.C); vec(G.D)];
+        % samll num
+        small_value = 1e-8;  % 可以根据需要调整这个值
+
+        % replace 0
+        vecG(vecG == 0) = small_value;
+        options = optimset('LargeScale', 'off', 'TypicalX', vecG, 'Display', 'off');
 
         % Solve the quadratic programming problem
         y = quadprog(Q, f, [], [], Aeq, beq, [], [], [], options);
