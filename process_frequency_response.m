@@ -1,4 +1,4 @@
-function real_num = process_frequency_response(y11_si, s, poles, residues, d,all_type)
+function real_num = process_frequency_response(y11_si, s, poles, residues, d)
     % PROCESS_FREQUENCY_RESPONSE - 去除常数项、一阶项和实极点的贡献，添加负频率对称性并进行 SVD 分析
     %
     % 输入参数：
@@ -39,37 +39,45 @@ function real_num = process_frequency_response(y11_si, s, poles, residues, d,all
     y11_full_spectrum = cat(3, y11_si_hat, y11_neg_freq);  
 
     % 对每个 MxM 的频率响应矩阵进行 IFFT
-    if all_type ==1
-        x = zeros(M, M, 2*N-1);
-        for i = 1:M
-            for j = 1:M
-                spectrum_ij = squeeze(y11_full_spectrum(i,j,:));
-                x(i,j,:) = ifft(spectrum_ij, 'symmetric');
-            end
-        end
-    else
-        x = zeros(1, 1, 2*N-1);
-        for i = 1:1
-            for j = 1:1
-                spectrum_ij = squeeze(y11_full_spectrum(i,j,:));
-                x(i,j,:) = ifft(spectrum_ij, 'symmetric');
-            end
+    x = zeros(1, 1, 2*N-1);
+    for i = 1:1
+        for j = 1:1
+            spectrum_ij = squeeze(y11_full_spectrum(i,j,:));
+            x(i,j,:) = ifft(spectrum_ij, 'symmetric');
         end
     end
+%     if all_type ==1
+%         x = zeros(M, M, 2*N-1);
+%         for i = 1:M
+%             for j = 1:M
+%                 spectrum_ij = squeeze(y11_full_spectrum(i,j,:));
+%                 x(i,j,:) = ifft(spectrum_ij, 'symmetric');
+%             end
+%         end
+%     else
+%         x = zeros(1, 1, 2*N-1);
+%         for i = 1:1
+%             for j = 1:1
+%                 spectrum_ij = squeeze(y11_full_spectrum(i,j,:));
+%                 x(i,j,:) = ifft(spectrum_ij, 'symmetric');
+%             end
+%         end
+%     end
     
     % 第六步：构建系数矩阵 R 并进行 SVD 分析
     x_1d = squeeze(x(1, 1, :));  
     p = 40;  
     R = build_matrix(x_1d, p);  
     S = svds(R, p);
-    min_threshold = 0.00000001;  % 阈值范围的最小值
-    max_threshold = 0.01;        % 阈值范围的最大值
-    for i = 2:2:p
-        if S(i)/S(1) < calculate_threshold(real_num, 1, min_threshold, max_threshold)  
+    min_threshold = 1e-7;  % 阈值范围的最小值
+    max_threshold = 1;        % 阈值范围的最大值
+    SS = sum(S.^2);
+    for i = 1:1:p
+        if S(i)==0||((sum(S(1:i).^2)/SS >=1-calculate_threshold(real_num, Nq, min_threshold, max_threshold))&&(S(i-1)/S(i)<3))
             break;
         end
     end
-    real_num = real_num + i;
+    real_num = real_num + i+mod(i,2);
     toc
 end
 

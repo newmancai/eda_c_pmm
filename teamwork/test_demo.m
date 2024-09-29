@@ -14,21 +14,22 @@ opts.enforce = 1;
 opts.Sample =1;
 opts.vf_niter1 =600;
 opts.vf_niter2 =300;
+opts.weightparam = 3;
 
 windowSize = 30;
-proximityThreshold =10;
+proximityThreshold =64;
 numRuns = 1;
 info1 = [];
 
 filenames = {'channel.s2p', 'pll_sa_doubler_spur_ind.s5p', 'sp125_uniform.s64p'};
 
-filename = filenames{2};  % 获取当前文件名
+filename = filenames{3};  % 获取当前文件名
 
 [G,~,F,H,info]=pmm_S(filename,opts,windowSize,proximityThreshold);
 print_info(info,extract_filename(filename));
 [residues,poles]=ss2pr(G.A,G.B,G.C);
 Hinf=G.D;
-order = process_frequency_response(H,F*2*pi*1j, poles, residues,Hinf,0);
+order = process_frequency_response(H,F*2*pi*1j, poles, residues,Hinf);
 fprintf("推荐阶数：%d \n",order);
 if (order*size(H,1)^2<7e4)&&(order~=size(poles,1))
     [G1,~,F1,H1,info1]=pmm_S(filename,opts,windowSize,proximityThreshold,order);

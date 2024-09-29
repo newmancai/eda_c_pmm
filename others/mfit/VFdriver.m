@@ -390,12 +390,12 @@ if Nc>1 %Will do only for multi-terminal case
         if opts.screen==1
             disp(['   Iter ' num2str(iter)])
         end
-        if iter == 1 || mod(iter, 5) == 0
+        if iter == 1 || mod(iter, 5)== 0 || iter==Niter1 
             VF.skip_res = 0;
         else
             VF.skip_res = 1;
         end
-        [SER,poles,rmserr,fit]=vectfit3(f_sum,s,poles,weight_sum,VF);
+        [SER,poles,~,fit]=vectfit3(f_sum,s,poles,weight_sum,VF);
         if iter == 1
             % 第一次计算 currentValue
             SER2 = tri2full(SER);
@@ -403,15 +403,29 @@ if Nc>1 %Will do only for multi-terminal case
             previousValue = currentValue;    % 更新previousValue
             continue;  % 第一次不进行比较，跳过剩下逻辑
         end
+        if iter == Niter1
+            break;
+        end
         if mod(iter, 5) == 0
             SER2 = tri2full(SER);
             currentValue = norm_error(SER2,F,reshape(f_sum, 1, 1, Ns));
-            relativeDifference = abs((currentValue - previousValue) / previousValue);
+            relativeDifference = ((previousValue - currentValue) / previousValue);
             % 检查相差是否不超过1%%
-            if relativeDifference <= threshold && currentValue<0.10
-                %fprintf('在 iter1 = %d 时，相差不超过 1%%%%，停止循环1。\n',iter);
+            if abs(relativeDifference) <= threshold && currentValue<0.10
+                fprintf('在 iter1 = %d 时，相差不超过 1%%%%，停止循环1。\n',iter);
+%                 [residues,pole_temp]=ss2pr(SER2.A,SER2.B,SER2.C);
+%                 Hinf=SER2.D;
+%                 process_frequency_response(reshape(f_sum, 1, 1, Ns),F*2*pi*1j,pole_temp,residues,Hinf,0);
                 break;
             end
+%             if(relativeDifference < -0.1)
+%                 fprintf('在 iter1 = %d 存在振荡或不收敛的情况，退出循环。\n',iter);
+%                 [residues,pole_temp]=ss2pr(SER2.A,SER2.B,SER2.C);
+%                 Hinf=SER2.D;
+%                 process_frequency_response(reshape(f_sum, 1, 1, Ns),F*2*pi*1j,pole_temp,residues,Hinf,0)
+%                 break;
+%             end
+
             % 更新 previousValue 为当前值
             previousValue = currentValue;
         end

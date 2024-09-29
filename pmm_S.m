@@ -37,6 +37,7 @@ function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold,q)
 
     %% Step 0: load data
     [F,H] = readTouchstone(inputfile,opts);
+    proximityThreshold=ceil(size(H,1)/2);
     if nargin < 5
         q = 2*(countPeaksAndValleys3D(H,windowSize,proximityThreshold));
         q = max(1,q);
