@@ -14,12 +14,15 @@ windowSize = 20;
 proximityThreshold =30;
 numRuns = 1;
 
-filenames = {'channel.s2p', 'pll_sa_doubler_spur_ind.s5p', 'sp125_uniform.s64p'};
+filenames2 = {'channel.s2p', 'pll_sa_doubler_spur_ind.s5p', 'sp125_uniform.s64p'};
+filenames = {'pll_sa_doubler_spur_ind.s5p','channel.s2p','sp125_uniform.s64p'};
 for fileIndex = 1:length(filenames)
     filename = filenames{fileIndex};  % 获取当前文件名
     % 运行代码
-    [G,W,F,H,info] = pmm_S(filename, opts, windowSize, proximityThreshold);
-    print_info(info,extract_filename(filename));
+    for count = 1:10
+        [G,W,F,H,info] = pmm_S(filename, opts, windowSize, proximityThreshold);
+        print_info(info,extract_filename(filename));
+    end
     % 你可以在这里处理运行结果，比如存储结果或打印输出
 end
 

@@ -321,7 +321,7 @@ if opts.skip_pole~=1
         QQ = zeros(N+1,Nc);
         Escale=zeros(1,length(AA(1,:)));
         % update by caiyuyang 2024/9/27
-        if Nc*Ns<5e5
+        if Nc*Ns<2e5
             for n=1:Nc
                 A=zeros(Ns,(N+offs) +N+1); %b=zeros(Ns*Nc+1,1);
 
@@ -331,17 +331,17 @@ if opts.skip_pole~=1
                     weig=weight(:,n);
                 end
 
+                % 预先计算 weig.*Dk(1:Ns,:)，避免在每次循环中重复计算
+                weig_Dk = weig .* Dk(1:Ns,:);
 
-                for m=1:N+offs %left block
-                    A(1:Ns,m)=weig.*Dk(1:Ns,m);
-                end
-                inda=N+offs;
-                for m=1:N+1 %right block
-                    A(1:Ns,inda+m)=-weig.*Dk(1:Ns,m).*f(n,1:Ns).';
-                end
+                % 优化后的循环赋值
+                A(1:Ns,1:N+offs) = weig_Dk(:,1:N+offs);  % 左边块的赋值
+
+                inda = N + offs;
+                % 右边块的赋值，注意这里的矢量化
+                A(1:Ns,inda+1:inda+N+1) = -weig_Dk(:,1:N+1) .* f(n,1:Ns).';
 
                 A=[real(A);imag(A)];
-
 
                 %Integral criterion for sigma:
                 offset=(N+offs);
@@ -350,7 +350,16 @@ if opts.skip_pole~=1
                         A(2*Ns+1,offset+mm)=real(scale*sum(Dk(:,mm)));
                     end
                 end
-                [Q,R]=qr(A,0);
+                if n~=Nc
+                    R=qr(A,0);
+                    if size(A,2)>size(A,1)
+                        R = R(1:size(A,2), :); % 取前 n 行的 R
+                    end
+                    R = triu(R);
+                else
+                    [Q,R]=qr(A,0);
+                end
+                %[Q,R]=qr(A,0);
                 ind1=N+offs+1;
                 ind2=N+offs+N+1;
                 R22=R(ind1:ind2,ind1:ind2);
@@ -360,26 +369,31 @@ if opts.skip_pole~=1
                 end
             end %for n=1:Nc
         else
-            if isempty(gcp('nocreate'))
-                parpool(8); % 创建 8 个工作者的并行池
+            if isempty(gcp('nocreate'))   
+                pc = parcluster();
+                maxClusterWorkers = pc.NumWorkers;
+                maxWorkers = min(maxClusterWorkers, 8);
+                parpool(maxWorkers); % 创建 8 个工作者的并行池
+                %%%%%需要加一个读取并行池最大数量      
             end
-            parfor n=1:Nc
+            parfor n=1:Nc %查看哪里报错
                 A=zeros(Ns,(N+offs) +N+1); %b=zeros(Ns*Nc+1,1);
+                Q=[];
 
                 if common_weight==1
                     weig=weight;
                 else
                     weig=weight(:,n);
                 end
+                % 预先计算 weig.*Dk(1:Ns,:)，避免在每次循环中重复计算
+                weig_Dk = weig .* Dk(1:Ns,:);
 
+                % 优化后的循环赋值
+                A(1:Ns,1:N+offs) = weig_Dk(:,1:N+offs);  % 左边块的赋值
 
-                for m=1:N+offs %left block
-                    A(1:Ns,m)=weig.*Dk(1:Ns,m);
-                end
-                inda=N+offs;
-                for m=1:N+1 %right block
-                    A(1:Ns,inda+m)=-weig.*Dk(1:Ns,m).*f(n,1:Ns).';
-                end
+                inda = N + offs;
+                % 右边块的赋值，注意这里的矢量化
+                A(1:Ns,inda+1:inda+N+1) = -weig_Dk(:,1:N+1) .* f(n,1:Ns).';
 
                 A=[real(A);imag(A)];
 
@@ -390,7 +404,16 @@ if opts.skip_pole~=1
                         A(2*Ns+1,offset+mm)=real(scale*sum(Dk(:,mm)));
                     end
                 end
-                [Q,R]=qr(A,0);
+                if n~=Nc
+                    R=qr(A,0);
+                    if size(A,2)>size(A,1)
+                        R = R(1:size(A,2), :); % 取前 n 行的 R
+                    end
+                    R = triu(R);
+                else
+                    [Q,R]=qr(A,0);
+                end
+                %[Q,R]=qr(A,0);
                 ind1=N+offs+1;
                 ind2=N+offs+N+1;
                 R22=R(ind1:ind2,ind1:ind2);
@@ -412,6 +435,8 @@ if opts.skip_pole~=1
             AA(:,col)=Escale(col).*AA(:,col);
         end
         x=AA\bb;
+        clear AA;
+        clear bb;
         %size(x),size(Escale)
         x=x.*Escale.';
     end %if opts.relax==0
@@ -587,7 +612,7 @@ if opts.skip_res~=1
     % We now calculate SER for f, using the modified zeros of sigma as new poles :
     %========================================================================================
 
-    %clear LAMBD A A1 xA1 xxA1 A2 xA2 xxA2 b xb xxb C RES1 RES2;
+    clear LAMBD A A1 xA1 xxA1 A2 xA2 xxA2 b xb xxb C RES1 RES2;
 
     LAMBD=roetter;
 
@@ -669,7 +694,7 @@ if opts.skip_res~=1
             A(Ns+1:2*Ns,N+2)=A(Ns+1:2*Ns,N+2);
         end
 
-        %clear Escale;
+        clear Escale;
         Escale=zeros(1,length(A(1,:)));
         for col=1:length(A(1,:));
             Escale(col)=norm(A(:,col),2);
@@ -854,16 +879,20 @@ if opts.skip_res~=1
         drawnow;
     end
     fit=fit.';
+    clear f;
 
 
 end %if skip_res~=1
+
+clearvars -except SERA SERB SERC SERD SERE opts N fit rmserr;
 
 A=SERA;
 poles=A;
 if opts.skip_res~=1
     B=SERB; C=SERC; D=SERD; E=SERE;
 else
-    B=ones(N,1); C=zeros(Nc,N); D=zeros(Nc,Nc); E=zeros(Nc,Nc); rmserr=0;
+    B=[]; C=[]; D=[]; E=[]; rmserr=0;
+    %B=ones(N,1); C=zeros(Nc,N); D=zeros(Nc,Nc); E=zeros(Nc,Nc); rmserr=0;
 end
 
 
@@ -894,15 +923,17 @@ if opts.cmplx_ss~=1
         n=n+1;
         if cindex(m)==1
             a=A(n,n); a1=real(a); a2=imag(a);
-            c=C(:,n); c1=real(c); c2=imag(c);
-            b=B(n,:); b1=2*real(b); b2=-2*imag(b);
+            
             Ablock=[a1 a2;-a2 a1];
-
             A(n:n+1,n:n+1)=Ablock;
-            C(:,n)=c1;
-            C(:,n+1)=c2;
-            B(n,:)=b1;
-            B(n+1,:)=b2;
+            if(opts.skip_res~=1)
+                c=C(:,n); c1=real(c); c2=imag(c);
+                b=B(n,:); b1=2*real(b); b2=-2*imag(b);
+                C(:,n)=c1;
+                C(:,n+1)=c2;
+                B(n,:)=b1;
+                B(n+1,:)=b2;
+            end
         end
     end
 

@@ -3,11 +3,13 @@ if nargin < 2
     tol = 0;
 end
 if tol < 0
-    tol = 0;
+    tol = 0;H
 end
 
 if G.parametertype == 'Y'
     [r2,f2,slope]=half_size(G,tol);
+elseif G.parametertype == 'S'
+    [r2,f2]=half_size_S(G);
 else
     [r2,f2]=full_size(G,tol);
 end
@@ -15,7 +17,7 @@ end
 f2=sort(f2);
 r2=sort(r2);
 
-function [r2,f2,slope]=full_size(G,tol);
+function [r2,f2,slope]=full_size(G,tol)
 
 if strcmp(G.parametertype,'Y')
     [M,N]=EHP_H(G);
@@ -29,7 +31,24 @@ ix=find(r1>=0);
 r2=r1(ix);
 f2=r2/2/pi;
 
-function [r2,f2,slope]=half_size(G,tol);
+function [r2, f2] = half_size_S(G)
+    % half_size_S 计算新的被动性测试矩阵 P 并提取纯虚数特征值
+    % 输入：
+    %   G - 包含系统状态空间模型的结构体，具有字段 A, B, C, D
+    % 输出：
+    %   r2 - 提取的纯虚数特征值的虚部
+    %   f2 - 对应的频率，单位为 Hz
+   
+    I = eye(size(G.D));      
+    % P = (A - B*(D - I)^{-1}*C)(A - B*(D + I)^{-1}*C) (论文中由相似性变换推导的被动性测试矩阵)
+    % 通过计算 P，可以确定特征值为负实数的频率，这些频率表示奇异值在单位边界处的交叉点。  
+    P = (G.A - G.B / (G.D - I) * G.C) * (G.A - G.B / (G.D + I) * G.C);   
+    eigenvalues = sqrt(eig(P));
+    pure_imaginary = eigenvalues(imag(eigenvalues) ~= 0 & real(eigenvalues) == 0);
+    r2 = imag(pure_imaginary);
+    f2 = r2 / (2 * pi);
+
+function [r2,f2,slope]=half_size(G,tol)
 % 1. Adam Semlyen, A Half-Size Singularity Test Matrix for Fast and. Reliable Passivity Assessment
 %    of Rational Models, 2009.
 % 2. Bj?rn Gustavsen, Fast Passivity Assessment for S-Parameter Rational Models Via a 
@@ -54,25 +73,6 @@ function [r2, slope]=violation_refine(G,r,tol)
 [n,m] = size(G.B);
 r2=[];
 slope = [];
-
-% for iter = 1:m
-%     if G.parametertype == 'Y'
-%         func=@(x) ss_lambda_min(G,x,iter);
-%     else
-%         func=@(x) ss_sigma_max(G,x,iter)-1;
-%     end
-%     options=optimset('TolFun',1e-16,'TolX',1e-6,'Display','off');
-%     for c=1:length(r)
-%         [x,fval,exitflag,output,jacobian]=fsolve(func,r(c),options);
-%         if abs(fval) < 1e-6
-% %         if exitflag >= 0
-%             r2=[r2;x];
-%             slope = [slope,jacobian];
-%         end
-%     end
-% end
-% 
-% return;
 
 % % fastest method
     if G.parametertype == 'Y'

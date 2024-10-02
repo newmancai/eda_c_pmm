@@ -12,7 +12,7 @@ function [freq,Scatter_params,param_type,impedance] = readTouchstone(filename,op
 %       scatter_params - 提取的散射参数
 %       param_type   - 网络参数类型（s、y、z、h、g）
 %       impedance    - 参考阻抗值（默认 50 Ω）
-
+    tic 
     if nargin < 2
        opts=pmm_default;
        opts.parametertype = 'S';
@@ -20,10 +20,14 @@ function [freq,Scatter_params,param_type,impedance] = readTouchstone(filename,op
     end
 
     fileID = fopen(filename, 'r');
+
+    fseek(fileID, 0, 'eof');  % 移动到文件末尾
+    file_size = ftell(fileID);  % 获取文件大小
+    fseek(fileID, 0, 'bof');  % 移动回文件开头
+
     % 初始化变量
-    freq = [];
-    Scatter_params = [];
-    port_num = 0;
+    fre_index = 0;
+    bytes_read = 0;
     param_type = 'S';  % 默认参数类型为 S 参数
     freq_scale = 1;  % 频率缩放系数，默认 Hz
     impedance = 50;  % 默认参考阻抗为 50 欧姆
@@ -33,9 +37,15 @@ function [freq,Scatter_params,param_type,impedance] = readTouchstone(filename,op
     [~, ~, ext] = fileparts(filename);
     if startsWith(ext, '.s') && length(ext) > 2
         port_num = str2double(ext(3:end-1));  % 端口数
+    elseif startsWith(ext, '.S') && length(ext) > 2
+        port_num = str2double(ext(3:end-1));  % 端口数
     else
         error('文件后缀无效，无法确定端口数量');
     end
+
+    % 预定义 current_data 数组
+    num_params = port_num^2 * 2;  % 总数据量 (port_num^2 个复数值，每个复数值有两个部分)
+    current_data = zeros(1, num_params);  % 预定义数组，大小为 1 x port_num^2 * 2
     
     while ~feof(fileID)
         line = fgetl(fileID);
@@ -77,25 +87,46 @@ function [freq,Scatter_params,param_type,impedance] = readTouchstone(filename,op
         % 提取频率和网络参数数据
         data = sscanf(line, '%f');
         if ~isempty(data)
+            fre_index = fre_index+1;
+            if fre_index == 1
+                temp_freq = data(1) * freq_scale;
+                bytes_read = bytes_read + length(line) + 1;  % 加上换行符
+            end
 
-            freq = [freq; data(1) * freq_scale];  % 频率
-
+            if fre_index ==2
+                pred_num = ceil(file_size/bytes_read*1.1);
+                freq = zeros(pred_num,1);
+                Scatter_params = zeros(port_num,port_num,pred_num);
+                freq(1,:)=temp_freq;
+                Scatter_params(:,:,1)=Scatter_param;
+            end
+            if fre_index ~= 1
+                freq(fre_index,:) = data(1) * freq_scale;  % 频率
+            end
             complex_data = [];
             
-            % 需要读取的总数据量 (port_num^2 个复数值，每个复数值有两个部分)
-            num_params = port_num^2 * 2;
-            current_data = data(2:end);  % 去掉频率值
+             % 读取数据
+            current_data(:) = 0;  % 清空数组
+            current_data(1:length(data)-1) = data(2:end);  % 存储数据
+
+            % 记录有效数据的长度
+            actual_length = length(data) - 1;  % 初始有效长度
             
             % 如果当前行的数据不够，则继续读取下一行
-            while length(current_data) < num_params
+            while actual_length < num_params
                 line = fgetl(fileID);
                 next_data = sscanf(line, '%f');
-                current_data = [current_data; next_data];
+                if fre_index==1
+                    bytes_read = bytes_read + length(line) + 1;  % 加上换行符
+                end
+                if ~isempty(next_data)
+                    % 将新数据添加到 current_data 中，基于有效长度的位置
+                    current_data(actual_length + 1 : actual_length + length(next_data)) = next_data;
+                    % 更新有效数据的长度
+                    actual_length = actual_length + length(next_data);  % 增加有效长度
+                end
             end
-            
-            % 取出足够的复数数据
-            current_data = current_data(1:num_params);
-  
+ 
             % 提取网络参数（根据文件中的数据格式处理复数值）
             switch data_format
                 case 'RI'  % 实部 + 虚部
@@ -114,22 +145,21 @@ function [freq,Scatter_params,param_type,impedance] = readTouchstone(filename,op
             end
              % 将提取的数据重塑为 (port_num x port_num) 矩阵
             params = reshape(complex_data, [port_num, port_num]);
-            Scatter_param = convertToS(params,param_type,impedance);
-            Scatter_params = [Scatter_params; Scatter_param];
+            if fre_index == 1
+                Scatter_param = convertToS(params,param_type,impedance);
+            else
+                Scatter_params(:,:,fre_index) = convertToS(params,param_type,impedance);
+            end
         end
     end
-    
     fclose(fileID);
+
+    freq = freq(1:fre_index,:);
+    Scatter_params = Scatter_params(:,:,1:fre_index);
     
-    % 将网络参数重塑为 (port_num, port_num, frequency_points) 的三维矩阵
-    num_freq = length(freq);
-    Scatter_params = permute(reshape(Scatter_params, [port_num, num_freq, port_num]), [1, 3, 2]);
     % 转换为对称阵
-    ns=size(Scatter_params,3);
-    for c=1:ns
-          Scatter_params_sym(:,:,c)=(Scatter_params(:,:,c)+Scatter_params(:,:,c).')/2;
-    end
-    Scatter_params=Scatter_params_sym;
+    Scatter_params = (Scatter_params + permute(Scatter_params, [1, 2, 3])) / 2;
+    %Scatter_params=Scatter_params_sym;
     % 去除高频点
     fmax = optget(opts,'fmax',1e100);
     ix=find(freq>fmax);
@@ -137,6 +167,9 @@ function [freq,Scatter_params,param_type,impedance] = readTouchstone(filename,op
         freq=freq(1:ix);
         Scatter_params=Scatter_params(:,:,1:ix);
     end
+    [freq, indices] = sort(freq);
+    Scatter_params  = Scatter_params(:,:,indices);
+    fprintf("读取文件耗时 %.8f s\n",toc) 
 end
 
 function [S_params] = convertToS(params, param_type, Z0)
