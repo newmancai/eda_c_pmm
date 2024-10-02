@@ -50,4 +50,4 @@ See teamwork/test_demo.m for getting start.
 
 ### 版权说明
 
-代码基于https://github.com/yezuochang/pmm和Matrix Fitting 工具箱
+代码基于https://github.com/yezuochang/pmm 和Matrix Fitting 工具箱实现
