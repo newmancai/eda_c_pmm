@@ -309,8 +309,7 @@ if opts.skip_pole~=1
             scale=scale+(norm(weight(:,m).*f(m,:).'))^2;
         end
     end
-    scale=sqrt(scale)/Ns;
-
+    scale=sqrt(scale)/Ns/Nc;
 
     if opts.relax==1
         %Escale=zeros(1,Nc*(N+offs)+N+1);
@@ -321,7 +320,7 @@ if opts.skip_pole~=1
         QQ = zeros(N+1,Nc);
         Escale=zeros(1,length(AA(1,:)));
         % update by caiyuyang 2024/9/27
-        if Nc*Ns<2e5
+        if Nc < 1000
             for n=1:Nc
                 A=zeros(Ns,(N+offs) +N+1); %b=zeros(Ns*Nc+1,1);
 
@@ -612,7 +611,7 @@ if opts.skip_res~=1
     % We now calculate SER for f, using the modified zeros of sigma as new poles :
     %========================================================================================
 
-    clear LAMBD A A1 xA1 xxA1 A2 xA2 xxA2 b xb xxb C RES1 RES2;
+    %clear LAMBD A A1 xA1 xxA1 A2 xA2 xxA2 b xb xxb C RES1 RES2;
 
     LAMBD=roetter;
 
@@ -884,7 +883,7 @@ if opts.skip_res~=1
 
 end %if skip_res~=1
 
-clearvars -except SERA SERB SERC SERD SERE opts N fit rmserr;
+%clearvars -except SERA SERB SERC SERD SERE opts N fit rmserr;
 
 A=SERA;
 poles=A;

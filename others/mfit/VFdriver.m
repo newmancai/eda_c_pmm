@@ -215,7 +215,7 @@ if isempty(poles)
     end
     N=opts.N;
     oldpoletype=opts.poletype;
-    if N<6;
+    if N<6
         if strcmp(opts.poletype,'linlogcmplx')
             opts.poletype='logcmplx';
         end

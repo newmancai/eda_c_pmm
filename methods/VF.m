@@ -23,25 +23,30 @@ opt1.screen=0; %optget(opts,'verbose',0);
 opt1.plot=opts.plot;
 opt1.cmplx_ss=0;
 opt1.weightparam=optget(opts,'wgt_scheme',3); %weight(s)=1/sqrt(abs(Hij(s)));
+opt1.enableSVD = optget(opts,'enableSVD',0);
 poles=[];
 s1=2*pi*1j*F;
-Gc=VFdriver(H,s1,poles,opt1,F,valleypeak); 
+if ~opt1.enableSVD
+    Gc=VFdriver(H,s1,poles,opt1,F,valleypeak); 
+else
+    Gc=VFdriver_SVD(H',s1,poles,opt1,F,valleypeak); 
+end
 %读取opts的parametertype,若无定义则为Y
 Gc.parametertype=optget(opts,'parametertype','S');
 
 %如果一开始是passivity，则不拟合到f=0的点
 G=ss_real(Gc);
-[r2] = passivity_violation(G);
+% [r2] = passivity_violation(G);
 
 %if isempty(r2) && opts.enforce==1
-if isempty(r2) ||(size(H,1)^2*opt1.N >65536)
+if size(H,1)^2*opt1.N >65536
     opts.enforceDC = 0;
     %G.D = real(H(:,:,1) + G.C * (G.A \ G.B)); %强制赋值
 else
     opts.enforceDC = 1;
 end
 
-G = optimizeSystem(G,F,H,opts);
+%G = optimizeSystem(G,F,H,opts);
 W=[];
 
 end

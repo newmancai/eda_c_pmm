@@ -312,116 +312,43 @@ if opts.skip_pole~=1
     scale=sqrt(scale)/Ns;
 
 
-    if opts.relax==1
+    if opts.relax==1 %实现问题很大，存在bug
         %Escale=zeros(1,Nc*(N+offs)+N+1);
         %scale=norm(f);%/Ns; %Scaling for sigma in LS problem
-        AA=zeros(Nc*(N+1),N+1);
-        bb=zeros(Nc*(N+1),1);
-        RR = zeros(N, N+1,N+1);
-        QQ = zeros(N+1,Nc);
+        AA=zeros(N+1,N+1);
         Escale=zeros(1,length(AA(1,:)));
         % update by caiyuyang 2024/9/27
-        if Nc*Ns<5e5
-            for n=1:Nc
-                A=zeros(Ns,(N+offs) +N+1); %b=zeros(Ns*Nc+1,1);
-
-                if common_weight==1
-                    weig=weight;
-                else
-                    weig=weight(:,n);
-                end
-
-
-                for m=1:N+offs %left block
-                    A(1:Ns,m)=weig.*Dk(1:Ns,m);
-                end
-                inda=N+offs;
-                for m=1:N+1 %right block
-                    A(1:Ns,inda+m)=-weig.*Dk(1:Ns,m).*f(n,1:Ns).';
-                end
-
-                A=[real(A);imag(A)];
-
-
-                %Integral criterion for sigma:
-                offset=(N+offs);
-                if n==Nc
-                    for mm=1:N+1
-                        A(2*Ns+1,offset+mm)=real(scale*sum(Dk(:,mm)));
-                    end
-                end
-                [Q,R]=qr(A,0);
-                ind1=N+offs+1;
-                ind2=N+offs+N+1;
-                R22=R(ind1:ind2,ind1:ind2);
-                AA((n-1)*(N+1)+1:n*(N+1),:)=R22;
-                if n==Nc
-                    bb((n-1)*(N+1)+1:n*(N+1),1)=Q(end,N+offs+1:end)'*Ns*scale;
-                end
-            end %for n=1:Nc
-        else
-            if isempty(gcp('nocreate'))
-                
-                pc = parcluster();
-                maxClusterWorkers = pc.NumWorkers;
-                maxWorkers = min(maxClusterWorkers, 8);
-                parpool(maxWorkers); % 创建 8 个工作者的并行池
-                %%%%%需要加一个读取并行池最大数量
-                
+        for n=1:Nc
+            if common_weight==1
+                weig=weight;
+            else
+                weig=weight(:,n);
             end
-            parfor n=1:Nc
-                A=zeros(Ns,(N+offs) +N+1); %b=zeros(Ns*Nc+1,1);
 
-                if common_weight==1
-                    weig=weight;
-                else
-                    weig=weight(:,n);
-                end
+            % 预先计算 weig.*Dk(1:Ns,:)
+            weig_Dk = weig .* Dk(1:Ns,:);
 
+            % thin QR
+            [Q,~]=qr(weig_Dk,0);
 
-                for m=1:N+offs %left block
-                    A(1:Ns,m)=weig.*Dk(1:Ns,m);
-                end
-                inda=N+offs;
-                for m=1:N+1 %right block
-                    A(1:Ns,inda+m)=-weig.*Dk(1:Ns,m).*f(n,1:Ns).';
-                end
+            WFX = (weig_Dk(:,1:N+1) .* f(n,1:Ns).');
 
-                A=[real(A);imag(A)];
+            % Step 1: 计算 Q_i^H * (W_i * F_i * X)
+            QH_WFX = Q'*WFX;
 
-                %Integral criterion for sigma:
-                offset=(N+offs);
-                if n==Nc
-                    for mm=1:N+1
-                        A(2*Ns+1,offset+mm)=real(scale*sum(Dk(:,mm)));
-                    end
-                end
-                [Q,R]=qr(A,0);
-                ind1=N+offs+1;
-                ind2=N+offs+N+1;
-                R22=R(ind1:ind2,ind1:ind2);
-                RR(n,:,:)=R22;
-                if n==Nc
-                    QQ(:,n)=Q(end,N+offs+1:end)'*Ns*scale;
-                end
-            end %parfor n=1:Nc
-            for n=1:Nc
-                AA((n-1)*(N+1)+1:n*(N+1),:)=RR(n,:,:);
-                if n==Nc
-                    bb((n-1)*(N+1)+1:n*(N+1),1)=QQ(:,n);
-                end
-            end
-        end
+            % Step 2: 计算 (W_i * F_i * X)^H * (W_i * F_i * X)
+            WFX2 = WFX' * WFX; % 共轭转置
 
-        for col=1:length(AA(1,:))
-            Escale(col)=1/norm(AA(:,col));
-            AA(:,col)=Escale(col).*AA(:,col);
-        end
+            % Step 3: 计算 (Q_i^H * W_i * F_i * X)^H * (Q_i^H * W_i * F_i * X)
+            QH_WFX2 = QH_WFX' * QH_WFX;
+
+            AA = AA + WFX2 - QH_WFX2;
+        end %for n=1:Nc
+        v = sum(Dk, 1);
+        AA = AA + scale^2*(v'*v);
+        bb = scale^2*v';
         x=AA\bb;
-        %size(x),size(Escale)
-        x=x.*Escale.';
     end %if opts.relax==0
-
 
     %Situation: No relaxation, or produced D of sigma extremely small and large. Solve again, without relaxation
     if opts.relax==0 | abs(x(end))<TOLlow | abs(x(end))>TOLhigh

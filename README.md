@@ -30,10 +30,7 @@ See teamwork/test_demo.m for getting start.
 4. 极点残差融合
 5. VF转PA预测最佳阶数
 6. half_size S参数的被动性矩阵P
-
-###### 待实现
-
-1. 大规模矢量拟合加速
+7. P端口对应列空间的基底PCA
 
 ###### 未实现
 1. 无源性和dc的同时实现

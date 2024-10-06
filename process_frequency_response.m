@@ -1,4 +1,4 @@
-function real_num = process_frequency_response(y11_si, s, poles, residues, d)
+function real_num = process_frequency_response(y11_si, s, poles, residues, d ,dim_col)
     % PROCESS_FREQUENCY_RESPONSE - 去除常数项、一阶项和实极点的贡献，添加负频率对称性并进行 SVD 分析
     %
     % 输入参数：
@@ -11,7 +11,7 @@ function real_num = process_frequency_response(y11_si, s, poles, residues, d)
     % 输出参数：
     % real_num  - 实极点的数量和 SVD 阶数分析后的修正值
     
-    [~, ~, Nf] = size(y11_si);  
+    [M, ~, Nf] = size(y11_si);  
     [Nq, ~] = size(poles);      
     
     y11_si_hat = y11_si; 
@@ -48,17 +48,20 @@ function real_num = process_frequency_response(y11_si, s, poles, residues, d)
 
     % 第四步：构建系数矩阵 R 并进行 SVD 分析
     x_1d = squeeze(x(1, 1, :));  
-    p = 40;  
+    p = max(M*2,40);
+    p = min(p,N-2);
     R = build_matrix(x_1d, p);  
     S = svds(R, p);
-    min_threshold = 1e-6;  % 阈值范围的最小值filename
+    index_v = size(S,1);
+
+    min_threshold = 1e-10;  % 阈值范围的最小值filename
     max_threshold = 1;        % 阈值范围的最大值
     SS = sum(S.^2);
-    v=zeros(p,1);
-    for i =1:p
+    v=zeros(index_v,1);
+    for i =1:index_v
         v(i)=1-sum(S(1:i).^2)/SS;
     end
-    for i = 2:2:p
+    for i = 2:2:index_v
         if v(i)<=calculate_threshold(real_num,Nq, min_threshold, max_threshold)&&(v(i-1)/v(i)<2)&&(v(i)/v(i+1)<2)
             break;
         end
@@ -74,8 +77,7 @@ function R = build_matrix(x_1d, p)
     % p    - 矩阵的行数
     %
     % 输出参数：
-    % R - 构建的矩阵，大小为 p x (N-p-1)
-    
+    % R - 构建的矩阵，大小为 p x (N-p-1)    
     N = length(x_1d);  
     
     R = zeros(p, N-p-1);

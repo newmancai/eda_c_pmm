@@ -15,19 +15,20 @@ opts=pmm_default_S;
 opts.method='vf_only';
 opts.enforceDC = 1;
 opts.vf_niter1 =300;
-opts.vf_niter2 =10;
+opts.vf_niter2 =30;
 
 
 opts.weightparam = 3;
 
 
 opts.Sample= 1;%default%不需要采样设为2%%%%%基本没问题,三个参数delta delta1 delta2调一调效果就很好
+opts.sample_add = 0;
 opts.jk=1.4;%default%1.4
 
 windowSize = 30;
 proximityThreshold = 20;
-numRuns_start = 2;
-numRuns_end = 2;
+numRuns_start = 5;
+numRuns_end = 5;
 
 filenames = {'../../data/pll_sa_doubler_spur_ind.S5P','../../data/pll_cko_lo1_top_l.s34p','../../data/pll_testcase.s138p','../../data/sp125_uniform.S64P','../../data/1848-191031.s384p', '../../data/channel.S2P', '../../data/graphs_typical_-40_0.s229p'};
 
@@ -39,9 +40,9 @@ for i =numRuns_start:length(filenames)
     end
     filename = filenames{i};  % 获取当前文件名
     [G,W,F,H,info]=pmm_S(filename,opts,windowSize);
-    [residues,poles]=ss2pr(G.A,G.B,G.C);
-    Hinf=G.D;
-    generate_model_dat(poles,residues,Hinf);
+%     [residues,poles]=ss2pr(G.A,G.B,G.C);
+%     Hinf=G.D;
+%     generate_model_dat(poles,residues,Hinf);
     t2=clock;
     fprintf("非轻量化总程序耗时：%.5f s\n",etime(t2,t1))
     if i == numRuns_end

@@ -1,19 +1,21 @@
-clc
-clear
-P=[-2.2979,-110.2170,-55.8182,-2.7337,-72.0235,-45.9883;
-    -4.6346,-205.6276,-139.6364,-5.0029,-132.1760,-73.9120;
-    2.9419,98.7097,37.0000,0.6898,17.8065,27.0968;
-    -2.5578,-85.6070,-52.5455,-2.7795,-92.7683,-46.6158;
-    -4.6510,-160.8915,-89.0909,-5.1331,-178.9883,-130.0059;
-    0.6968,15.4839,24.0000,3.6387,86.3226,23.8387];
+bigH(:,:,1) = [1 2 3;
+               4 5 6;
+               7 8 9];
+           
+bigH(:,:,2) = [10 11 12;
+               13 14 15;
+               16 17 18];
+Nc = 3;
+f_for = zeros(Nc*Nc, size(bigH, 3)); % 预分配
+tell = 0;
 
-eigenvalues = sqrt(eig(P));
-% 提取纯虚数特征值
-pure_imaginary = eigenvalues(imag(eigenvalues) ~= 0 & real(eigenvalues) == 0);
+for col = 1:Nc
+    for row = 1:Nc
+        tell = tell + 1;
+        f_for(tell,:) = reshape(bigH(row, col, :), [1, size(bigH, 3)]);
+    end
+end
 
-% 提取虚部并存储到 r2
-r2 = imag(pure_imaginary);
-
-% 显示 r2 的结果
-disp('Imaginary parts extracted into r2:');
-disp(r2);
+f_reshape = reshape(bigH, Nc*Nc, size(bigH, 3));
+disp(f_for');
+disp(f_reshape');
