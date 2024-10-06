@@ -14,7 +14,7 @@ See teamwork/test_demo.m for getting start.
   - [待实现](#待实现)
   - [未实现](#未实现)
 - [作者](#作者)
-- [鸣谢](#鸣谢)
+- [版权说明](#版权说明)
 
 
 
@@ -30,7 +30,10 @@ See teamwork/test_demo.m for getting start.
 4. 极点残差融合
 5. VF转PA预测最佳阶数
 6. half_size S参数的被动性矩阵P
-7. P端口对应列空间的基底PCA
+7. P端口网络的列空间压缩
+
+###### 待实现
+none
 
 ###### 未实现
 1. 无源性和dc的同时实现

@@ -63,6 +63,8 @@ function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold)
     G = []; W = [];
     min_k_accuracy = [];
     allG = [];
+    all_F2= [];
+    all_H2= [];
     count_vf = 0;
     if isfield(opts,'Func')
         fprintf('\n');
@@ -74,6 +76,8 @@ function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold)
             [G_k,~,info_k,F2,H2] = func_call(newFunc{k},G,W,F1,H1,opts,valleypeakIndices,port_num,threshold);
             allG{k}= G_k;
             info{k} = info_k;
+            all_F2{k}  = F2;
+            all_H2{k} = H2;
             if ~info_k.success
                break;
             end
@@ -97,6 +101,10 @@ function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold)
                         order = max(size(poles,1)+ 10,order) ;
                     end    
                     threshold = threshold / 10;
+                else
+                    if(min_k_accuracy(k)>min_k_accuracy(max(k-1,1)))
+                        break;
+                    end
                 end
                 if order>(size(F2,1)-2)
                     opts.sample_add = 1;
@@ -104,14 +112,14 @@ function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold)
                 newFunc = [newFunc(1), {'VF'}, newFunc(2:end)];
                 opts.q = order;
             else
-                if size(H1,1)^2*opts.q <65536
-                    G = optimizeSystem(G, F2, H2, opts);
-                    info_k.error = norm_error(G,F1,H1);
-                    info_k.k_accuracy = info_k.error*opts.q;
-                    H0 = H1(:,:,1);
-                    HH = G.D - G.C * (G.A \ G.B);
-                    info_k.dc_error = max(vec(abs(H0 - HH)));
-                end
+%                 if size(H1,1)^2*opts.q <65536
+%                     G = optimizeSystem(G, F2, H2, opts);
+%                     info_k.error = norm_error(G,F1,H1);
+%                     info_k.k_accuracy = info_k.error*opts.q;
+%                     H0 = H1(:,:,1);
+%                     HH = G.D - G.C * (G.A \ G.B);
+%                     info_k.dc_error = max(vec(abs(H0 - HH)));
+%                 end
             end
             opts.Func = newFunc;
             %if opts.enforceDC == 1
@@ -123,6 +131,15 @@ function [G,W,F,H,info] = pmm_S(inputfile,opts,windowSize,proximityThreshold)
 
     [~, minIndex] = min(min_k_accuracy);
     G = allG{minIndex};
+    if size(H1,1)^2*info{minIndex}.order <65536
+        %G = optimizeSystem(G, F2(minIndex), H2(minIndex), opts);
+        G = optimizeSystem(G, F1, H1, opts);
+        info{minIndex}.error = norm_error(G,F1,H1);
+        info{minIndex}.k_accuracy = info{minIndex}.error*info{minIndex}.order;
+        H0 = H1(:,:,1);
+        HH = G.D - G.C * (G.A \ G.B);
+        info{minIndex}.dc_error = max(vec(abs(H0 - HH)));
+    end
 
     %% Step 4: scale back
     G = ss_scale(G,scale);
@@ -319,7 +336,7 @@ function [G,W,info,F2,H2] = func_call(funcname,G,W,F1,H1,opts,valleypeakIndices,
         H2=H1(:,:,uniqueChangePoints);
         F2=F1(uniqueChangePoints,1);
         opts.q = min(size(F2,1)-2,opts.q); %防止QR分解后的下三角为空
-        if size(H2,3)>=6
+        if size(H2,1)>=5
             Nc = size(H2, 1);
             reshaped_H2 = reshape(H2, Nc * Nc, size(H2, 3))';
             concatenated_H2 = [real(reshaped_H2); imag(reshaped_H2)];

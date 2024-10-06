@@ -1,0 +1,127 @@
+读取文件耗时 0.13124330 s
+time use 0.0211 seconds
+初始阶数为 38 
+
+run our initial fuction
+在 iter1 = 5 时，出现不收敛，停止循环1。
+目前的error: 4.171715e-09 
+推荐阶数：42 
+run our initial fuction
+在 iter1 = 5 时，出现不收敛，停止循环1。
+目前的error: 4.055475e-09 
+推荐阶数：42 
+DocName         FuncName   Order      Time            Error(Norm)          Error(DC)            K_accuracy      Passivity 
+--------------------------------------------------------------------------------------------------------------------------
+channel.S2P     VF         38         0.49900         0.000000417%         0.00000000000        0.00000016      non-passive
+channel.S2P     VF         42         0.31500         0.000000406%         0.00000000000        0.00000017      non-passive
+非轻量化总程序耗时：1.76600 s
+读取文件耗时 0.01878570 s
+time use 0.0024 seconds
+初始阶数为 12 
+
+列空间降维为：10 维 
+run our initial fuction
+在 iter1 = 10 时，相差不超过 1%%，停止循环1。
+目前的error: 2.870717e-04 
+推荐阶数：14 
+列空间降维为：10 维 
+run our initial fuction
+在 iter1 = 15 时，相差不超过 1%%，停止循环1。
+在 iter2 = 10 时，相差不超过 1%%，停止循环2。
+目前的error: 2.148996e-04 
+推荐阶数：16 
+列空间降维为：10 维 
+run our initial fuction
+在 iter1 = 5 时，出现不收敛，停止循环1。
+目前的error: 2.377748e-04 
+推荐阶数：14 
+DocName         FuncName   Order      Time            Error(Norm)          Error(DC)            K_accuracy      Passivity 
+--------------------------------------------------------------------------------------------------------------------------
+pll.S5P         VF         12         0.08500         0.028707170%         0.00006007860        0.00344486      non-passive
+pll.S5P         VF         14         0.05500         0.021489956%         0.00002617999        0.00300859      non-passive
+pll.S5P         VF         16         0.03300         0.023777482%         0.00009850213        0.00380440      non-passive
+非轻量化总程序耗时：0.34700 s
+读取文件耗时 0.63311300 s
+time use 0.0289 seconds
+初始阶数为 12 
+
+列空间降维为：46 维 
+run our initial fuction
+在 iter1 = 10 时，出现不收敛，停止循环1。
+目前的error: 5.199183e-02 
+推荐阶数：22 
+列空间降维为：46 维 
+run our initial fuction
+在 iter1 = 10 时，出现不收敛，停止循环1。
+目前的error: 3.171619e-03 
+推荐阶数：22 
+DocName         FuncName   Order      Time            Error(Norm)          Error(DC)            K_accuracy      Passivity 
+--------------------------------------------------------------------------------------------------------------------------
+pll.s34p        VF         12         0.37200         5.199182588%         0.02356994402        0.62390191      non-passive
+pll.s34p        VF         22         0.46500         0.317161890%         0.00055796566        0.06977562      non-passive
+非轻量化总程序耗时：2.65900 s
+
+读取 ../../data/channel.S2P 文件耗时 0.10678240 s
+time use 0.0130 seconds
+初始阶数为 38 
+
+run our initial fuction
+在 iter1 = 5 时，出现不收敛，停止循环1。
+目前的error: 4.171715e-09 
+推荐阶数：42 
+run our initial fuction
+在 iter1 = 5 时，出现不收敛，停止循环1。
+目前的error: 4.055475e-09 
+推荐阶数：42 
+DocName         FuncName   Order      Time            Error(Norm)          Error(DC)            K_accuracy      Passivity 
+--------------------------------------------------------------------------------------------------------------------------
+channel.S2P     VF         38         0.52200         0.000000417%         0.00000000000        0.00000016      non-passive
+channel.S2P     VF         42         0.35800         0.000000406%         0.00000000000        0.00000017      non-passive
+非轻量化总程序耗时：1.80200 s
+
+读取 ../../data/pll_sa_doubler_spur_ind.S5P 文件耗时 0.01817870 s
+time use 0.0017 seconds
+初始阶数为 12 
+
+列空间降维为：10 维 
+run our initial fuction
+在 iter1 = 10 时，相差不超过 1%%，停止循环1。
+目前的error: 2.870717e-04 
+推荐阶数：14 
+列空间降维为：10 维 
+run our initial fuction
+在 iter1 = 15 时，相差不超过 1%%，停止循环1。
+在 iter2 = 10 时，相差不超过 1%%，停止循环2。
+目前的error: 2.148996e-04 
+推荐阶数：16 
+列空间降维为：10 维 
+run our initial fuction
+在 iter1 = 5 时，出现不收敛，停止循环1。
+目前的error: 2.377748e-04 
+推荐阶数：14 
+DocName         FuncName   Order      Time            Error(Norm)          Error(DC)            K_accuracy      Passivity 
+--------------------------------------------------------------------------------------------------------------------------
+pll.S5P         VF         12         0.08100         0.028707170%         0.00006007860        0.00344486      non-passive
+pll.S5P         VF         14         0.04800         0.021489956%         0.00002617999        0.00300859      non-passive
+pll.S5P         VF         16         0.03100         0.023777482%         0.00009850213        0.00380440      non-passive
+非轻量化总程序耗时：0.31600 s
+
+读取 ../../data/pll_cko_lo1_top_l.s34p 文件耗时 0.47793980 s
+time use 0.0310 seconds
+初始阶数为 12 
+
+列空间降维为：46 维 
+run our initial fuction
+在 iter1 = 10 时，出现不收敛，停止循环1。
+目前的error: 5.199183e-02 
+推荐阶数：22 
+列空间降维为：46 维 
+run our initial fuction
+在 iter1 = 10 时，出现不收敛，停止循环1。
+目前的error: 3.171619e-03 
+推荐阶数：22 
+DocName         FuncName   Order      Time            Error(Norm)          Error(DC)            K_accuracy      Passivity 
+--------------------------------------------------------------------------------------------------------------------------
+pll.s34p        VF         12         0.30800         5.199182588%         0.02356994402        0.62390191      non-passive
+pll.s34p        VF         22         0.44300         0.317161890%         0.00055796566        0.06977562      non-passive
+非轻量化总程序耗时：2.22800 s

@@ -215,7 +215,7 @@ function [freq, Scatter_params, param_type, impedance] = readTouchstone2(filenam
     [freq, indices] = sort(freq);
     Scatter_params  = Scatter_params(:,:,indices);
     
-    fprintf("读取文件耗时 %.8f s\n", toc);
+    fprintf("读取 %s 文件耗时 %.8f s\n",filename,toc);
 end
 
 function [S_params] = convertToS(params, param_type, Z0)

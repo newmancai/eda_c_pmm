@@ -23,16 +23,26 @@ opts.weightparam = 3;
 
 opts.Sample= 1;%default%不需要采样设为2%%%%%基本没问题,三个参数delta delta1 delta2调一调效果就很好
 opts.sample_add = 0;
+opts.enableSVD = 0;
 opts.jk=1.4;%default%1.4
 
 windowSize = 30;
 proximityThreshold = 20;
-numRuns_start = 5;
-numRuns_end = 5;
+numRuns_start = 1;
+numRuns_end = 7;
 
-filenames = {'../../data/pll_sa_doubler_spur_ind.S5P','../../data/pll_cko_lo1_top_l.s34p','../../data/pll_testcase.s138p','../../data/sp125_uniform.S64P','../../data/1848-191031.s384p', '../../data/channel.S2P', '../../data/graphs_typical_-40_0.s229p'};
+filenames = {'../../data/channel.S2P', ...
+    '../../data/pll_sa_doubler_spur_ind.S5P', ...
+    '../../data/pll_cko_lo1_top_l.s34p', ...
+    '../../data/sp125_uniform.S64P', ...
+    '../../data/pll_testcase.s138p', ...
+    '../../data/graphs_typical_-40_0.s229p', ...
+    '../../data/1848-191031.s384p'};
 
+diary('eda_diary.txt');
+diary on;
 for i =numRuns_start:length(filenames)
+    fprintf("\n");
     t1=clock;
     pool = gcp('nocreate'); % 获取当前并行池，如果没有则返回空
     if ~isempty(pool)
@@ -44,11 +54,12 @@ for i =numRuns_start:length(filenames)
 %     Hinf=G.D;
 %     generate_model_dat(poles,residues,Hinf);
     t2=clock;
-    fprintf("非轻量化总程序耗时：%.5f s\n",etime(t2,t1))
+    fprintf("非轻量化总程序耗时：%.5f s\n",etime(t2,t1));
     if i == numRuns_end
         break;
     end
 end
+diary off;
 
 profile off
 

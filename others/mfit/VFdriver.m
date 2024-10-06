@@ -431,25 +431,18 @@ if Nc>1 %Will do only for multi-terminal case
             break;
         end
         if mod(iter, 5) == 0
-            SER2 = tri2full(SER);
-            currentValue = norm_error(SER2,F,reshape(f_sum, 1, 1, Ns),fit);
+            %SER2 = tri2full(SER);
+            currentValue = norm_error(SER,F,reshape(f_sum, 1, 1, Ns),fit);
             relativeDifference = ((previousValue - currentValue) / previousValue);
             % 检查相差是否不超过1%%
             if abs(relativeDifference) <= threshold && currentValue<0.10
                 fprintf('在 iter1 = %d 时，相差不超过 1%%%%，停止循环1。\n',iter);
-%                 [residues,pole_temp]=ss2pr(SER2.A,SER2.B,SER2.C);
-%                 Hinf=SER2.D;
-%                 process_frequency_response(reshape(f_sum, 1, 1, Ns),F*2*pi*1j,pole_temp,residues,Hinf,0);
                 break;
             end
-%             if(relativeDifference < -0.1)
-%                 fprintf('在 iter1 = %d 存在振荡或不收敛的情况，退出循环。\n',iter);
-%                 [residues,pole_temp]=ss2pr(SER2.A,SER2.B,SER2.C);
-%                 Hinf=SER2.D;
-%                 process_frequency_response(reshape(f_sum, 1, 1, Ns),F*2*pi*1j,pole_temp,residues,Hinf,0)
-%                 break;
-%             end
-
+            if relativeDifference > 0.1
+                fprintf('在 iter1 = %d 时，出现不收敛，停止循环1。\n', iter);
+                break;
+            end
             % 更新 previousValue 为当前值
             previousValue = currentValue;
         end
@@ -478,23 +471,30 @@ for iter=1:Niter2
         previousValue = currentValue;    % 更新previousValue
         continue;  % 第一次不进行比较，跳过剩下逻辑
     end
-    if mod(iter, 5) == 0
-        SER2 = tri2full(SER);
+    if mod(iter,5) == 0
+        if ~opts.enableSVD
+            SER2 = tri2full(SER);
+        else
+            SER2 = SER;
+        end
         currentValue = norm_error(SER2,F,bigH,fit1);
-        relativeDifference = abs((currentValue - previousValue) / previousValue);
+        relativeDifference = ((currentValue - previousValue) / previousValue);
         % 检查相差是否不超过3%
-        if relativeDifference <= threshold && currentValue<0.10
-            %fprintf('在 iter2 = %d 时，相差不超过 1%%%%，停止循环2。\n', iter);
+        if abs(relativeDifference) <= threshold && abs(currentValue)<0.10
+            fprintf('在 iter2 = %d 时，相差不超过 1%%%%，停止循环2。\n', iter);
             break;
         end
-        if relativeDifference <= circle_threshold 
+        if abs(relativeDifference) <= circle_threshold 
             %fprintf('在 iter2 = %d 时，陷入循环，停止循环2。\n', iter);
+            break;
+        end
+        if relativeDifference > 0.1 
+            %fprintf('在 iter2 = %d 时，出现不收敛，停止循环2。\n', iter);
             break;
         end
         % 更新 previousValue 为当前值
         previousValue = currentValue;
     end
-
 end
 if Niter2==0
     VF.skip_res=0; VF.skip_pole=1;
